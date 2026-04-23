@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAccountSelects();
   initJournalMonth();
   initReportYear();
+  initChartYearSelect();
   loadTaxSettings();
   renderAll();
   navigate('dashboard');
@@ -314,53 +315,373 @@ function updateDashboard() {
     return d.getFullYear() === now.getFullYear();
   });
 
-  let income = 0, expense = 0, kasjiTotal = 0, kasjiBiz = 0, kasjiHome = 0;
-  let taxSales10 = 0, taxReceived = 0, taxPaid = 0;
-
-  filtered.forEach(e => {
-    const creditType = getAccountType(e.credit.account);
-    const debitType = getAccountType(e.debit.account);
-
-    if (creditType === 'income') income += e.credit.amount;
-    if (debitType === 'expense') {
-      const expAmt = e.kasji ? e.kasji.bizAmount : e.debit.amount;
-      expense += expAmt;
-      if (e.kasji) {
-        kasjiTotal += e.debit.amount;
-        kasjiBiz += e.kasji.bizAmount;
-        kasjiHome += e.debit.amount - e.kasji.bizAmount;
-      }
+  // 前期間（比較用）
+  let prevFiltered = entries.filter(e => {
+    const d = new Date(e.date);
+    if (period === 'month') {
+      const pm = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+      const py = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      return d.getFullYear() === py && d.getMonth() === pm;
     }
-
-    // 消費税
-    if (e.debit.taxCode === 'exempt10') { taxSales10 += e.debit.amount; taxReceived += e.debit.taxAmount; }
-    if (e.credit.taxCode === 'exempt10') { taxSales10 += e.credit.amount; taxReceived += e.credit.taxAmount; }
-    if (e.debit.taxCode === 'input10' || e.debit.taxCode === 'input8') taxPaid += e.debit.taxAmount;
-    if (e.credit.taxCode === 'input10' || e.credit.taxCode === 'input8') taxPaid += e.credit.taxAmount;
+    if (period === 'quarter') {
+      const q = Math.floor(now.getMonth() / 3);
+      const pq = q === 0 ? 3 : q - 1;
+      const py = q === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      return d.getFullYear() === py && Math.floor(d.getMonth() / 3) === pq;
+    }
+    return d.getFullYear() === now.getFullYear() - 1;
   });
 
-  document.getElementById('dash-income').textContent = fmt(income);
-  document.getElementById('dash-expense').textContent = fmt(expense);
-  const profit = income - expense;
+  function calcSums(list) {
+    let income = 0, expense = 0, kasjiTotal = 0, kasjiBiz = 0, kasjiHome = 0;
+    let taxSales10 = 0, taxReceived = 0, taxPaid = 0;
+    list.forEach(e => {
+      const creditType = getAccountType(e.credit.account);
+      const debitType = getAccountType(e.debit.account);
+      if (creditType === 'income') income += e.credit.amount;
+      if (debitType === 'expense') {
+        const expAmt = e.kasji ? e.kasji.bizAmount : e.debit.amount;
+        expense += expAmt;
+        if (e.kasji) { kasjiTotal += e.debit.amount; kasjiBiz += e.kasji.bizAmount; kasjiHome += e.debit.amount - e.kasji.bizAmount; }
+      }
+      if (e.debit.taxCode === 'exempt10') { taxSales10 += e.debit.amount; taxReceived += e.debit.taxAmount; }
+      if (e.credit.taxCode === 'exempt10') { taxSales10 += e.credit.amount; taxReceived += e.credit.taxAmount; }
+      if (e.debit.taxCode === 'input10' || e.debit.taxCode === 'input8') taxPaid += e.debit.taxAmount;
+      if (e.credit.taxCode === 'input10' || e.credit.taxCode === 'input8') taxPaid += e.credit.taxAmount;
+    });
+    return { income, expense, kasjiTotal, kasjiBiz, kasjiHome, taxSales10, taxReceived, taxPaid };
+  }
+
+  const cur = calcSums(filtered);
+  const prev = calcSums(prevFiltered);
+
+  document.getElementById('dash-income').textContent = fmt(cur.income);
+  document.getElementById('dash-expense').textContent = fmt(cur.expense);
+
+  // 前期比デルタ
+  function deltaHtml(cur, prev, reverseColor = false) {
+    if (prev === 0) return '';
+    const diff = cur - prev;
+    const pct = Math.round(diff / prev * 100);
+    const up = diff >= 0;
+    const positive = reverseColor ? !up : up;
+    const sign = up ? '▲' : '▼';
+    const cls = positive ? 'delta-up' : 'delta-down';
+    return `<span class="s-delta ${cls}">${sign} ${Math.abs(pct)}%</span>`;
+  }
+  document.getElementById('dash-income-delta').innerHTML = deltaHtml(cur.income, prev.income);
+  document.getElementById('dash-expense-delta').innerHTML = deltaHtml(cur.expense, prev.expense, true);
+
+  const profit = cur.income - cur.expense;
   document.getElementById('dash-profit').textContent = fmt(profit);
   document.getElementById('dash-profit').style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
   document.getElementById('dash-profit-sub').textContent = profit >= 0 ? '黒字' : '赤字';
 
-  document.getElementById('按分-before').textContent = fmt(kasjiTotal);
-  document.getElementById('按分-biz').textContent = fmt(kasjiBiz);
-  document.getElementById('按分-home').textContent = fmt(kasjiHome);
-  document.getElementById('dash-tax-sales10').textContent = fmt(taxSales10);
-  document.getElementById('dash-tax-received').textContent = fmt(taxReceived);
-  document.getElementById('dash-tax-paid').textContent = fmt(taxPaid);
+  document.getElementById('按分-before').textContent = fmt(cur.kasjiTotal);
+  document.getElementById('按分-biz').textContent = fmt(cur.kasjiBiz);
+  document.getElementById('按分-home').textContent = fmt(cur.kasjiHome);
+  document.getElementById('dash-tax-sales10').textContent = fmt(cur.taxSales10);
+  document.getElementById('dash-tax-received').textContent = fmt(cur.taxReceived);
+  document.getElementById('dash-tax-paid').textContent = fmt(cur.taxPaid);
+
+  // アラートチェック
+  checkAlerts(cur.income, cur.expense);
+
+  // 予算表示更新
+  renderBudgetDisplay(cur.income, cur.expense);
 
   // 最近の仕訳（5件）
   const recent = [...entries].reverse().slice(0, 5);
   const el = document.getElementById('recent-entries');
   if (recent.length === 0) {
     el.innerHTML = '<div class="empty-msg">仕訳がまだありません</div>';
+  } else {
+    el.innerHTML = recent.map(e => entryCard(e, true)).join('');
+  }
+
+  // グラフ・カレンダー更新
+  renderCharts();
+  renderCalendar();
+}
+
+// ===== 予算管理 =====
+let budget = JSON.parse(localStorage.getItem('kaikei_budget') || '{"income":0,"expense":0}');
+
+function toggleBudgetEdit() {
+  const edit = document.getElementById('budget-edit');
+  const isOpen = edit.style.display !== 'none';
+  if (!isOpen) {
+    document.getElementById('budget-income').value = budget.income || '';
+    document.getElementById('budget-expense').value = budget.expense || '';
+  }
+  edit.style.display = isOpen ? 'none' : 'block';
+}
+
+function saveBudget() {
+  budget.income = parseFloat(document.getElementById('budget-income').value) || 0;
+  budget.expense = parseFloat(document.getElementById('budget-expense').value) || 0;
+  localStorage.setItem('kaikei_budget', JSON.stringify(budget));
+  document.getElementById('budget-edit').style.display = 'none';
+  updateDashboard();
+  showToast('予算を保存しました', 'success');
+}
+
+function renderBudgetDisplay(income, expense) {
+  const el = document.getElementById('budget-display');
+  if (!budget.income && !budget.expense) {
+    el.innerHTML = '<div class="budget-empty">予算未設定 — 右の「編集」から設定できます</div>';
     return;
   }
-  el.innerHTML = recent.map(e => entryCard(e, true)).join('');
+  function bar(label, actual, target, isExpense) {
+    if (!target) return '';
+    const pct = Math.min(100, Math.round(actual / target * 100));
+    const over = isExpense ? actual > target : actual < target * 0.5;
+    const barColor = over ? '#b03a2e' : '#1a7a5e';
+    return `
+      <div class="budget-row">
+        <div class="budget-row-head">
+          <span class="budget-name">${label}</span>
+          <span class="budget-vals">${fmt(actual)} / ${fmt(target)}</span>
+        </div>
+        <div class="budget-bar-bg">
+          <div class="budget-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+        <div class="budget-pct" style="color:${barColor}">${pct}%${over ? (isExpense ? ' 超過！' : ' 未達') : ''}</div>
+      </div>`;
+  }
+  el.innerHTML = bar('収入目標', income, budget.income, false) + bar('支出上限', expense, budget.expense, true);
+}
+
+// ===== アラート =====
+function checkAlerts(income, expense) {
+  const alerts = [];
+  if (budget.expense > 0 && expense > budget.expense) {
+    alerts.push({ type: 'danger', msg: `支出が予算を超過しています（${fmt(expense - budget.expense)} オーバー）` });
+  } else if (budget.expense > 0 && expense > budget.expense * 0.9) {
+    alerts.push({ type: 'warn', msg: `支出が予算の90%に達しています` });
+  }
+  if (budget.income > 0 && income < budget.income * 0.5) {
+    alerts.push({ type: 'warn', msg: `収入が目標の50%を下回っています` });
+  }
+  const banner = document.getElementById('alert-banner');
+  if (alerts.length === 0) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  banner.innerHTML = alerts.map(a =>
+    `<div class="alert-item alert-${a.type}">${a.type === 'danger' ? '⚠️' : '💡'} ${a.msg}</div>`
+  ).join('');
+}
+
+// ===== グラフ =====
+let monthlyChart = null;
+let categoryChart = null;
+let catTabMode = 'expense';
+
+function initChartYearSelect() {
+  const sel = document.getElementById('chart-year');
+  if (!sel) return;
+  const now = new Date();
+  sel.innerHTML = '';
+  for (let y = now.getFullYear(); y >= now.getFullYear() - 4; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = `${y}年`;
+    sel.appendChild(opt);
+  }
+}
+
+function switchCatTab(mode) {
+  catTabMode = mode;
+  document.getElementById('cat-tab-expense').classList.toggle('active', mode === 'expense');
+  document.getElementById('cat-tab-income').classList.toggle('active', mode === 'income');
+  renderCharts();
+}
+
+function renderCharts() {
+  renderMonthlyChart();
+  renderCategoryChart();
+}
+
+function renderMonthlyChart() {
+  const yearEl = document.getElementById('chart-year');
+  if (!yearEl) return;
+  const year = parseInt(yearEl.value) || new Date().getFullYear();
+  const months = Array.from({ length: 12 }, (_, i) => i);
+  const labels = months.map(m => `${m + 1}月`);
+  const incomeData = new Array(12).fill(0);
+  const expenseData = new Array(12).fill(0);
+
+  entries.forEach(e => {
+    const d = new Date(e.date);
+    if (d.getFullYear() !== year) return;
+    const m = d.getMonth();
+    const ct = getAccountType(e.credit.account);
+    const dt = getAccountType(e.debit.account);
+    if (ct === 'income') incomeData[m] += e.credit.amount;
+    if (dt === 'expense') expenseData[m] += e.kasji ? e.kasji.bizAmount : e.debit.amount;
+  });
+
+  const ctx = document.getElementById('monthly-chart');
+  if (!ctx) return;
+  if (monthlyChart) monthlyChart.destroy();
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '収入', data: incomeData, backgroundColor: 'rgba(26,122,94,0.75)', borderRadius: 4, order: 2 },
+        { label: '支出', data: expenseData, backgroundColor: 'rgba(176,58,46,0.75)', borderRadius: 4, order: 2 },
+        { label: '利益', data: incomeData.map((v, i) => v - expenseData[i]),
+          type: 'line', borderColor: '#3d4a6b', backgroundColor: 'rgba(61,74,107,0.08)',
+          tension: 0.4, pointRadius: 3, fill: true, order: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ¥${Math.round(ctx.raw).toLocaleString('ja-JP')}` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10 }, callback: v => v >= 10000 ? `${Math.round(v/10000)}万` : v } }
+      }
+    }
+  });
+}
+
+function renderCategoryChart() {
+  const now = new Date();
+  const year = parseInt((document.getElementById('chart-year') || {}).value) || now.getFullYear();
+  const catMap = {};
+
+  entries.forEach(e => {
+    const d = new Date(e.date);
+    if (d.getFullYear() !== year) return;
+    if (catTabMode === 'expense') {
+      const dt = getAccountType(e.debit.account);
+      if (dt !== 'expense') return;
+      const key = e.debit.account;
+      catMap[key] = (catMap[key] || 0) + (e.kasji ? e.kasji.bizAmount : e.debit.amount);
+    } else {
+      const ct = getAccountType(e.credit.account);
+      if (ct !== 'income') return;
+      const key = e.credit.account;
+      catMap[key] = (catMap[key] || 0) + e.credit.amount;
+    }
+  });
+
+  const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const labels = sorted.map(([k]) => k);
+  const data = sorted.map(([, v]) => v);
+  const COLORS = ['#3d4a6b','#1a7a5e','#b03a2e','#8b6914','#2a5aad','#6b3d7a','#2a7a8b','#7a6b3d'];
+
+  const ctx = document.getElementById('category-chart');
+  if (!ctx) return;
+  if (categoryChart) categoryChart.destroy();
+
+  if (data.length === 0) {
+    document.getElementById('category-legend').innerHTML = '<div class="empty-msg">データがありません</div>';
+    return;
+  }
+
+  categoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: COLORS.slice(0, data.length), borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ¥${Math.round(ctx.raw).toLocaleString('ja-JP')}` } }
+      }
+    }
+  });
+
+  const total = data.reduce((s, v) => s + v, 0);
+  document.getElementById('category-legend').innerHTML = sorted.map(([k, v], i) =>
+    `<div class="legend-row">
+      <span class="legend-dot" style="background:${COLORS[i]}"></span>
+      <span class="legend-name">${k}</span>
+      <span class="legend-pct">${Math.round(v / total * 100)}%</span>
+      <span class="legend-val">${fmt(v)}</span>
+    </div>`
+  ).join('');
+}
+
+// ===== カレンダー =====
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function calMove(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const titleEl = document.getElementById('cal-title');
+  const gridEl = document.getElementById('calendar-grid');
+  if (!titleEl || !gridEl) return;
+
+  titleEl.textContent = `${calYear}年${calMonth + 1}月`;
+
+  // 月内の取引日マップ作成
+  const dayMap = {};
+  entries.forEach(e => {
+    const d = new Date(e.date);
+    if (d.getFullYear() !== calYear || d.getMonth() !== calMonth) return;
+    const day = d.getDate();
+    if (!dayMap[day]) dayMap[day] = { income: 0, expense: 0 };
+    const ct = getAccountType(e.credit.account);
+    const dt = getAccountType(e.debit.account);
+    if (ct === 'income') dayMap[day].income += e.credit.amount;
+    if (dt === 'expense') dayMap[day].expense += e.kasji ? e.kasji.bizAmount : e.debit.amount;
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === calYear && today.getMonth() === calMonth;
+
+  const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+  let html = DOW.map((d, i) =>
+    `<div class="cal-dow ${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${d}</div>`
+  ).join('');
+
+  // 空白セル
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell empty"></div>';
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isToday = isCurrentMonth && today.getDate() === day;
+    const tx = dayMap[day];
+    let dots = '';
+    if (tx) {
+      if (tx.income > 0) dots += '<span class="cal-dot income-dot"></span>';
+      if (tx.expense > 0) dots += '<span class="cal-dot expense-dot"></span>';
+    }
+    const dow = (firstDay + day - 1) % 7;
+    html += `<div class="cal-cell${isToday ? ' today' : ''}${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}" onclick="calDayClick(${day})">
+      <span class="cal-day-num">${day}</span>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  gridEl.innerHTML = html;
+}
+
+function calDayClick(day) {
+  const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const monthStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}`;
+  document.getElementById('journal-month').value = monthStr;
+  navigate('journal');
+  // 少し遅らせてから当日へスクロール
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.entry-date');
+    cards.forEach(c => { if (c.textContent === dateStr.replace(/-/g,'/')) c.closest('.entry-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  }, 100);
 }
 
 // ===== 仕訳帳 =====

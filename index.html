@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>青色申告 会計</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -38,7 +39,7 @@
   <!-- === ダッシュボード === -->
   <div class="page active" id="page-dashboard">
     <div class="page-header">
-      <h1 class="page-title">収支概要</h1>
+      <h1 class="page-title">ダッシュボード</h1>
       <div class="header-actions">
         <select class="period-select" id="period-select" onchange="updateDashboard()">
           <option value="month">今月</option>
@@ -48,20 +49,84 @@
       </div>
     </div>
 
+    <!-- アラートバナー -->
+    <div id="alert-banner" style="display:none"></div>
+
+    <!-- KPIカード -->
     <div class="summary-row">
       <div class="summary-card income">
         <div class="s-label">収入</div>
         <div class="s-value" id="dash-income">¥0</div>
+        <div class="s-delta" id="dash-income-delta"></div>
       </div>
       <div class="summary-card expense">
         <div class="s-label">支出</div>
         <div class="s-value" id="dash-expense">¥0</div>
+        <div class="s-delta" id="dash-expense-delta"></div>
       </div>
     </div>
     <div class="profit-card">
       <div class="p-label">事業所得（概算）</div>
       <div class="p-value" id="dash-profit">¥0</div>
       <div class="p-sub" id="dash-profit-sub"></div>
+    </div>
+
+    <!-- 予算アラート設定 -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title">月次予算</span>
+        <button class="link-btn" onclick="toggleBudgetEdit()">編集</button>
+      </div>
+      <div id="budget-display"></div>
+      <div id="budget-edit" style="display:none">
+        <div class="budget-input-row">
+          <span class="budget-label">収入目標</span>
+          <input type="number" class="budget-input" id="budget-income" placeholder="0">
+        </div>
+        <div class="budget-input-row">
+          <span class="budget-label">支出上限</span>
+          <input type="number" class="budget-input" id="budget-expense" placeholder="0">
+        </div>
+        <button class="budget-save-btn" onclick="saveBudget()">保存</button>
+      </div>
+    </div>
+
+    <!-- 月次収支グラフ -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title">月次収支推移</span>
+        <select class="chart-year-sel" id="chart-year" onchange="renderCharts()"></select>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="monthly-chart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- カテゴリ別支出グラフ -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title">科目別支出</span>
+        <button class="chart-tab-btn active" id="cat-tab-expense" onclick="switchCatTab('expense')">支出</button>
+        <button class="chart-tab-btn" id="cat-tab-income" onclick="switchCatTab('income')">収入</button>
+      </div>
+      <div class="chart-wrap donut-wrap">
+        <canvas id="category-chart" height="200"></canvas>
+      </div>
+      <div id="category-legend"></div>
+    </div>
+
+    <!-- カレンダー -->
+    <div class="section-card">
+      <div class="section-head">
+        <button class="cal-nav" onclick="calMove(-1)">‹</button>
+        <span class="section-title" id="cal-title"></span>
+        <button class="cal-nav" onclick="calMove(1)">›</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="cal-legend">
+        <span class="cal-dot income-dot"></span>収入
+        <span class="cal-dot expense-dot"></span>支出
+      </div>
     </div>
 
     <!-- 家事按分サマリー -->
