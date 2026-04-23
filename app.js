@@ -5,6 +5,7 @@ let currentPage = 'dashboard';
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', () => {
+  initIcons();
   initAccountSelects();
   initJournalMonth();
   initReportYear();
@@ -13,6 +14,86 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAll();
   navigate('dashboard');
 });
+
+// ===== アイコン初期化 =====
+function initIcons() {
+  const navMap = {
+    'nav-icon-dashboard': 'dashboard',
+    'nav-icon-journal':   'journal',
+    'nav-icon-ledger':    'ledger',
+    'nav-icon-tax':       'tax',
+    'nav-icon-report':    'report',
+  };
+  Object.entries(navMap).forEach(([id, name]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon(name, 'nav-svg');
+  });
+
+  const secMap = {
+    'sec-icon-budget':      'budget',
+    'sec-icon-chart':       'chart',
+    'sec-icon-donut':       'donut',
+    'sec-icon-donut2':      'donut',
+    'sec-icon-calendar':    'calendar',
+    'sec-icon-kasji':       'kasji',
+    'sec-icon-taxSummary':  'taxSummary',
+    'sec-icon-taxSummary2': 'taxSummary',
+    'sec-icon-recent':      'recent',
+    'sec-icon-settings':    'settings',
+    'sec-icon-pl':          'pl',
+    'sec-icon-bs':          'bs',
+    'sec-icon-export':      'export',
+  };
+  Object.entries(secMap).forEach(([id, name]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon(name, 'sec-svg');
+  });
+
+  const kpiMap = {
+    'kpi-icon-income':  ['income', 'kpi-svg'],
+    'kpi-icon-expense': ['expense', 'kpi-svg'],
+  };
+  Object.entries(kpiMap).forEach(([id, [name, cls]]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon(name, cls);
+  });
+  const profEl = document.getElementById('kpi-icon-profit');
+  if (profEl) profEl.innerHTML = icon('profit', 'kpi-svg profit-svg');
+
+  const imp = document.getElementById('import-svg-icon');
+  if (imp) imp.innerHTML = icon('import', 'import-lg-svg');
+
+  const formMap = {
+    'fl-date':           'date',
+    'fl-debit-account':  'account',
+    'fl-debit-tax':      'taxForm',
+    'fl-debit-amount':   'amount',
+    'fl-credit-account': 'account',
+    'fl-credit-tax':     'taxForm',
+    'fl-credit-amount':  'amount',
+    'fl-memo':           'memo',
+    'fl-kasji':          'kasjiForm',
+  };
+  Object.entries(formMap).forEach(([id, name]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon(name, 'form-svg');
+  });
+
+  const debitEl = document.getElementById('dc-icon-debit');
+  if (debitEl) debitEl.innerHTML = icon('debit', 'dc-svg');
+  const creditEl = document.getElementById('dc-icon-credit');
+  if (creditEl) creditEl.innerHTML = icon('credit', 'dc-svg');
+
+  const expMap = {
+    'exp-icon-journal': 'journal',
+    'exp-icon-pl':      'pl',
+    'exp-icon-tax':     'tax',
+  };
+  Object.entries(expMap).forEach(([id, name]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon(name, 'exp-svg');
+  });
+}
 
 function renderAll() {
   updateDashboard();

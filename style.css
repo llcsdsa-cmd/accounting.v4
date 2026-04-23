@@ -933,3 +933,77 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
   align-items: center;
 }
 .cal-legend .cal-dot { width: 7px; height: 7px; }
+
+/* ===== SVGアイコン共通 ===== */
+.icon { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
+/* ナビアイコン */
+.nav-svg { width: 22px; height: 22px; display: block; }
+.tab-icon-svg { display: flex; justify-content: center; align-items: center; height: 24px; }
+
+/* セクションタイトル行 */
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted);
+  letter-spacing: 0.04em;
+}
+.sec-icon { display: flex; align-items: center; flex-shrink: 0; }
+.sec-svg { width: 15px; height: 15px; color: var(--color-muted); }
+
+/* KPIカードアイコン */
+.s-icon-wrap {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 8px;
+}
+.income-bg { background: rgba(26,122,94,0.12); color: var(--color-income); }
+.expense-bg { background: rgba(176,58,46,0.12); color: var(--color-expense); }
+.kpi-svg { width: 20px; height: 20px; }
+
+/* 利益カードアイコン */
+.profit-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.profit-icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.profit-svg { width: 24px; height: 24px; color: rgba(255,255,255,0.9); }
+
+/* インポートアイコン（大） */
+.import-svg-icon {
+  display: flex; justify-content: center; align-items: center;
+  margin-bottom: 6px;
+}
+.import-lg-svg { width: 36px; height: 36px; color: var(--color-muted); }
+
+/* フォームラベルアイコン */
+.form-label { display: flex; align-items: center; gap: 5px; }
+.form-label-icon { display: flex; align-items: center; }
+.form-svg { width: 13px; height: 13px; color: var(--color-muted); }
+
+/* 借方・貸方ラベルアイコン */
+.dc-label { display: flex; align-items: center; gap: 6px; }
+.dc-icon { display: flex; align-items: center; }
+.dc-svg { width: 16px; height: 16px; }
+.debit .dc-svg { color: var(--color-income); }
+.credit .dc-svg { color: var(--color-expense); }
+
+/* エクスポートボタンアイコン */
+.export-btn { display: flex; align-items: center; gap: 10px; }
+.export-btn-icon { display: flex; align-items: center; flex-shrink: 0; }
+.exp-svg { width: 16px; height: 16px; color: var(--color-muted); }
+
+/* ナビタブ active時のアイコン色強調 */
+.nav-tab.active .nav-svg { color: var(--color-accent); }
+.nav-tab:not(.active) .nav-svg { color: var(--color-muted); }
