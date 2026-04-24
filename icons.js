@@ -299,6 +299,35 @@ const ICONS = {
     <rect x="16.7" y="5.3" width="3" height="2" rx="1" fill="#94a3b8" transform="rotate(45 16.7 5.3)"/>
   </svg>`,
 
+  // ===== 電帳法 =====
+
+  // 電帳法ナビ：グリーン盾＋文書
+  dencho: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V6L12 2z" fill="#dcfce7"/>
+    <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V6L12 2z" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M8 12l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+
+  // 検索アイコン：パープル虫眼鏡
+  search: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="11" cy="11" r="7" fill="#ede9fe"/>
+    <circle cx="11" cy="11" r="7" fill="none" stroke="#8b5cf6" stroke-width="1.8"/>
+    <path d="M16.5 16.5L21 21" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M8 11h6M11 8v6" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`,
+
+  // チェックリスト：ブルーチェック
+  checklist: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="18" height="18" rx="3" fill="#dbeafe"/>
+    <rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+    <path d="M7 8l2 2 4-4" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="14" y="7.5" width="5" height="1.5" rx=".75" fill="#3b82f6" opacity="0.6"/>
+    <path d="M7 13l2 2 4-4" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="14" y="12.5" width="4" height="1.5" rx=".75" fill="#3b82f6" opacity="0.6"/>
+    <path d="M7 18.5h.01" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+    <rect x="10" y="17.8" width="7" height="1.5" rx=".75" fill="#cbd5e1"/>
+  </svg>`,
+
 };
 
 // アイコンをSVG文字列で返すヘルパー（classを付与）

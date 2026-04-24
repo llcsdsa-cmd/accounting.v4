@@ -22,6 +22,7 @@ function initIcons() {
     'nav-icon-journal':   'journal',
     'nav-icon-ledger':    'ledger',
     'nav-icon-tax':       'tax',
+    'nav-icon-dencho':    'dencho',
     'nav-icon-report':    'report',
   };
   Object.entries(navMap).forEach(([id, name]) => {
@@ -43,6 +44,8 @@ function initIcons() {
     'sec-icon-pl':          'pl',
     'sec-icon-bs':          'bs',
     'sec-icon-export':      'export',
+    'sec-icon-search':      'search',
+    'sec-icon-checklist':   'checklist',
   };
   Object.entries(secMap).forEach(([id, name]) => {
     const el = document.getElementById(id);
@@ -101,6 +104,7 @@ function renderAll() {
   renderLedger();
   renderTax();
   renderReport();
+  renderDencho();
 }
 
 // ===== ナビゲーション =====
@@ -1014,60 +1018,13 @@ function renderReport() {
     <div class="report-row total"><span>純資産（概算）</span><span>${fmt(totalAsset - totalLiability)}</span></div>`;
 }
 
-// ===== PRiMPO CSVインポート =====
+// ===== PRiMPO CSVインポート（電帳法対応版） =====
 function importPrimpoCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const text = ev.target.result;
-    const lines = text.trim().split('\n');
-    let imported = 0;
-    lines.forEach((line, i) => {
-      if (i === 0) return; // ヘッダースキップ
-      const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-      if (cols.length < 3) return;
-      const date = cols[0] || new Date().toISOString().slice(0, 10);
-      const desc = cols[1] || 'PRiMPO取込';
-      const rawAmt = parseFloat(cols[2]);
-      if (isNaN(rawAmt)) return;
-      const amount = Math.abs(rawAmt);
-      const isIncome = rawAmt >= 0;
-
-      const entry = {
-        id: Date.now().toString() + i,
-        date,
-        debit: {
-          account: isIncome ? '普通預金' : (cols[3] || '消耗品費'),
-          sub: '',
-          amount,
-          taxCode: 'non',
-          taxAmount: 0,
-        },
-        credit: {
-          account: isIncome ? '売上高' : '普通預金',
-          sub: '',
-          amount,
-          taxCode: 'non',
-          taxAmount: 0,
-        },
-        memo: desc + '（PRiMPO）',
-        kasji: null,
-        createdAt: Date.now(),
-      };
-      entries.push(entry);
-      imported++;
-    });
-    entries.sort((a, b) => a.date.localeCompare(b.date));
-    saveData();
-    renderAll();
-    const notice = document.getElementById('import-notice');
-    notice.textContent = `${imported}件をPRiMPOから取り込みました。科目・税区分を確認してください。`;
-    notice.style.display = 'block';
-    showToast(`${imported}件インポート完了`, 'success');
+  importPrimpoCSVWithDencho(file).then(() => {
     event.target.value = '';
-  };
-  reader.readAsText(file, 'UTF-8');
+  });
 }
 
 // ===== CSVエクスポート =====
@@ -1117,6 +1074,19 @@ function downloadCSV(csv, filename) {
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
+}
+
+// ===== 電帳法検索クリア =====
+function clearDenchoSearch() {
+  ['ds-keyword','ds-date-from','ds-date-to','ds-amt-min','ds-amt-max'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['ds-category','ds-taxrate','ds-verified','ds-deadline'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = 'all';
+  });
+  renderDenchoSearch();
 }
 
 // ===== Toast通知 =====

@@ -30,6 +30,10 @@
       <span class="tab-icon-svg" id="nav-icon-tax"></span>
       <span class="tab-label">消費税</span>
     </button>
+    <button class="nav-tab" data-page="dencho" onclick="navigate('dencho')">
+      <span class="tab-icon-svg" id="nav-icon-dencho"></span>
+      <span class="tab-label">電帳法</span>
+    </button>
     <button class="nav-tab" data-page="report" onclick="navigate('report')">
       <span class="tab-icon-svg" id="nav-icon-report"></span>
       <span class="tab-label">決算</span>
@@ -243,6 +247,119 @@
     </div>
   </div>
 
+  <!-- 電子帳簿保存法 -->
+  <div class="page" id="page-dencho">
+    <div class="page-header">
+      <h1 class="page-title">電子帳簿保存法</h1>
+      <button class="add-btn dencho-export-btn" onclick="exportDenchoCSV()">CSV出力</button>
+    </div>
+
+    <!-- 法令バナー -->
+    <div class="dencho-law-banner">
+      <div class="law-banner-icon" id="dencho-law-icon"></div>
+      <div>
+        <div class="law-banner-title">スキャナ保存対応（電帳法第4条3項）</div>
+        <div class="law-banner-sub">PRiMPO取込データを電子帳簿保存法準拠で管理・検索できます</div>
+      </div>
+    </div>
+
+    <!-- 統計バー -->
+    <div class="dencho-stat-row" id="dencho-stat"></div>
+
+    <!-- 7要件検索パネル -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title-row"><span class="sec-icon" id="sec-icon-search"></span>検索（7要件対応）</span>
+        <button class="link-btn" onclick="clearDenchoSearch()">クリア</button>
+      </div>
+
+      <!-- キーワード -->
+      <div class="search-field">
+        <label class="search-label">キーワード（取引先・内容・ファイル名）</label>
+        <input type="search" class="search-input" id="ds-keyword" placeholder="例：田中商事" oninput="renderDenchoSearch()">
+      </div>
+
+      <!-- 取引年月日 範囲 -->
+      <div class="search-field">
+        <label class="search-label">取引年月日（範囲指定）</label>
+        <div class="search-date-row">
+          <input type="date" class="search-input half" id="ds-date-from" onchange="renderDenchoSearch()">
+          <span class="date-sep">〜</span>
+          <input type="date" class="search-input half" id="ds-date-to" onchange="renderDenchoSearch()">
+        </div>
+      </div>
+
+      <!-- 金額範囲 -->
+      <div class="search-field">
+        <label class="search-label">取引金額（範囲指定）</label>
+        <div class="search-date-row">
+          <input type="number" class="search-input half" id="ds-amt-min" placeholder="下限" oninput="renderDenchoSearch()">
+          <span class="date-sep">〜</span>
+          <input type="number" class="search-input half" id="ds-amt-max" placeholder="上限" oninput="renderDenchoSearch()">
+        </div>
+      </div>
+
+      <!-- セレクト群 -->
+      <div class="search-selects">
+        <div class="search-sel-wrap">
+          <label class="search-label">収支区分</label>
+          <select class="search-select" id="ds-category" onchange="renderDenchoSearch()">
+            <option value="all">すべて</option>
+            <option value="収入">収入</option>
+            <option value="支出">支出</option>
+          </select>
+        </div>
+        <div class="search-sel-wrap">
+          <label class="search-label">税率区分</label>
+          <select class="search-select" id="ds-taxrate" onchange="renderDenchoSearch()">
+            <option value="all">すべて</option>
+            <option value="exempt10">課税売上10%</option>
+            <option value="exempt8">課税売上8%</option>
+            <option value="input10">課税仕入10%</option>
+            <option value="input8">課税仕入8%</option>
+            <option value="free">非課税</option>
+            <option value="non">対象外</option>
+          </select>
+        </div>
+        <div class="search-sel-wrap">
+          <label class="search-label">確認状態</label>
+          <select class="search-select" id="ds-verified" onchange="renderDenchoSearch()">
+            <option value="all">すべて</option>
+            <option value="yes">確認済</option>
+            <option value="no">未確認</option>
+          </select>
+        </div>
+        <div class="search-sel-wrap">
+          <label class="search-label">入力期限</label>
+          <select class="search-select" id="ds-deadline" onchange="renderDenchoSearch()">
+            <option value="all">すべて</option>
+            <option value="ok">期限内</option>
+            <option value="over">期限超過</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- レコード一覧 -->
+    <div id="dencho-list"></div>
+
+    <!-- 法的要件チェックリスト -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title-row"><span class="sec-icon" id="sec-icon-checklist"></span>保存要件チェックリスト</span>
+      </div>
+      <div class="checklist">
+        <div class="check-item ok"><span class="check-mark">✓</span><div><b>真実性の確保</b><br>SHA-256ハッシュによる改ざん検知・変更履歴の記録</div></div>
+        <div class="check-item ok"><span class="check-mark">✓</span><div><b>可視性の確保（7要件検索）</b><br>日付・金額・取引先・税区分・収支区分・範囲・組み合わせ検索</div></div>
+        <div class="check-item ok"><span class="check-mark">✓</span><div><b>入力期限管理</b><br>取引月翌々月末の期限を自動計算・超過アラート</div></div>
+        <div class="check-item ok"><span class="check-mark">✓</span><div><b>スキャナ保存要件</b><br>PRiMPO規定（200dpi以上・カラー24bit）を記録</div></div>
+        <div class="check-item ok"><span class="check-mark">✓</span><div><b>訂正・削除履歴</b><br>全変更を日時・内容・理由とともにログ記録</div></div>
+        <div class="check-item warn"><span class="check-mark">!</span><div><b>タイムスタンプ</b><br>取込日時を記録（認定タイムスタンプは別途取得が必要です）</div></div>
+        <div class="check-item warn"><span class="check-mark">!</span><div><b>事務処理規程</b><br>社内規程の整備は別途必要です（税理士にご確認ください）</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 決算 -->
   <div class="page" id="page-report">
     <div class="page-header">
@@ -402,10 +519,25 @@
   </div>
 </div>
 
+<!-- 電帳法詳細モーダル -->
+<div class="modal-overlay" id="dencho-modal" onclick="if(event.target===this)closeDenchoModal()">
+  <div class="modal" id="dencho-modal-inner">
+    <div class="modal-header">
+      <h2 class="modal-title">電帳法レコード詳細</h2>
+      <button class="modal-close" onclick="closeDenchoModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dencho-modal-body"></div>
+    <div class="modal-footer">
+      <button class="modal-btn save" onclick="closeDenchoModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="accounts.js"></script>
 <script src="icons.js"></script>
+<script src="dencho.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

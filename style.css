@@ -1001,3 +1001,226 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
 .dc-label { display: flex; align-items: center; gap: 6px; }
 .dc-icon { display: flex; align-items: center; }
 .dc-svg { width: 18px; height: 18px; }
+
+/* ===== 電子帳簿保存法ページ ===== */
+
+/* 法令バナー */
+.dencho-law-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 16px 0;
+  background: linear-gradient(135deg, #dcfce7, #d1fae5);
+  border: 1px solid #86efac;
+  border-radius: var(--radius-card);
+  padding: 14px;
+}
+.law-banner-icon { flex-shrink: 0; }
+.law-banner-title { font-size: 13px; font-weight: 700; color: #15803d; margin-bottom: 2px; }
+.law-banner-sub   { font-size: 11px; color: #166534; }
+
+/* 統計バー */
+.dencho-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 10px 16px 0;
+}
+.dencho-stat-item {
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 10px 8px;
+  text-align: center;
+}
+.dencho-stat-item.verified   { border-color: #86efac; background: #f0fdf4; }
+.dencho-stat-item.unverified { border-color: #fcd34d; background: #fffbeb; }
+.dencho-stat-item.overdue    { border-color: #fca5a5; background: #fff1f2; }
+.ds-num   { display: block; font-size: 20px; font-weight: 700; line-height: 1.2; }
+.ds-label { display: block; font-size: 10px; color: var(--color-muted); margin-top: 2px; }
+
+/* 検索パネル */
+.search-field { margin-bottom: 10px; }
+.search-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  margin-bottom: 4px;
+  letter-spacing: 0.03em;
+}
+.search-input {
+  width: 100%;
+  background: var(--color-bg);
+  border: 0.5px solid var(--color-border-mid);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--color-text);
+  -webkit-appearance: none;
+}
+.search-input:focus { outline: none; border-color: #8b5cf6; }
+.search-input.half { width: calc(50% - 12px); }
+.search-date-row { display: flex; align-items: center; gap: 8px; }
+.date-sep { font-size: 14px; color: var(--color-muted); flex-shrink: 0; }
+
+.search-selects {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.search-sel-wrap { display: flex; flex-direction: column; gap: 4px; }
+.search-select {
+  background: var(--color-bg);
+  border: 0.5px solid var(--color-border-mid);
+  border-radius: 8px;
+  padding: 8px 8px;
+  font-size: 12px;
+  color: var(--color-text);
+  -webkit-appearance: none;
+}
+
+/* 電帳法カード */
+.dencho-card {
+  margin: 0 16px 8px;
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.dencho-card.is-verified { border-color: #86efac; }
+
+.dencho-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 6px;
+  border-bottom: 0.5px solid var(--color-border);
+}
+.dencho-date { font-size: 12px; font-weight: 600; color: var(--color-muted); min-width: 72px; }
+.dencho-badges { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+
+.dencho-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.verified-badge   { background: #dcfce7; color: #15803d; }
+.unverified-badge { background: #fef9c3; color: #854d0e; }
+.primpo-badge     { background: #ede9fe; color: #6d28d9; }
+.overdue-badge    { background: #fee2e2; color: #991b1b; }
+
+.dencho-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px 6px;
+}
+.dencho-partner { font-size: 14px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dencho-amount  { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0; margin-left: 8px; }
+
+.dencho-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 12px 6px;
+}
+.meta-item { font-size: 11px; color: var(--color-muted); }
+.deadline-ok   { color: #15803d; font-weight: 600; }
+.deadline-over { color: #991b1b; font-weight: 600; }
+
+.dencho-hash {
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--color-muted);
+  padding: 0 12px 6px;
+  word-break: break-all;
+  opacity: 0.6;
+}
+
+.dencho-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 0.5px solid var(--color-border);
+  background: var(--color-bg);
+}
+.dencho-action-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 0.5px solid var(--color-border-mid);
+  background: var(--color-surface);
+  cursor: pointer;
+  color: var(--color-text);
+}
+.verify-btn   { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.unverify-btn { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+.log-btn      { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+
+/* 詳細モーダル内 */
+.detail-section { margin-bottom: 16px; }
+.detail-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--color-border);
+  font-size: 13px;
+  gap: 8px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row span { color: var(--color-muted); flex-shrink: 0; }
+.detail-row strong { text-align: right; word-break: break-all; }
+
+.detail-hash {
+  background: var(--color-bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.hash-label { font-size: 11px; color: var(--color-muted); margin-bottom: 4px; }
+.hash-val   { font-size: 11px; font-family: monospace; word-break: break-all; color: var(--color-text); }
+
+.log-row {
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--color-border);
+}
+.log-at     { font-size: 11px; color: var(--color-muted); }
+.log-reason { font-size: 12px; margin-top: 2px; }
+
+/* チェックリスト */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.check-mark {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.check-item.ok   .check-mark { background: #dcfce7; color: #15803d; }
+.check-item.warn .check-mark { background: #fef9c3; color: #854d0e; }
+.check-item.ok   b { color: var(--color-text); }
+.check-item.warn b { color: #854d0e; }
+
+/* エクスポートボタン */
+.dencho-export-btn { font-size: 13px; }
