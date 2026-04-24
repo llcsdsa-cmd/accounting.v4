@@ -1,197 +1,309 @@
-// ===== オリジナルSVGアイコンセット =====
-// viewBox="0 0 24 24"  stroke-based  strokeWidth=1.8
+// ===== カラフルSVGアイコンセット =====
+// 各アイコンに固有の色を直接指定（currentColor不使用）
 const ICONS = {
-  // ナビゲーション
-  dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+
+  // ===== ナビゲーション =====
+
+  // 概要：インディゴ系グリッド
+  dashboard: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="7" height="7" rx="2" fill="#6366f1" opacity="0.9"/>
+    <rect x="14" y="3" width="7" height="7" rx="2" fill="#8b5cf6" opacity="0.9"/>
+    <rect x="3" y="14" width="7" height="7" rx="2" fill="#06b6d4" opacity="0.9"/>
+    <rect x="14" y="14" width="7" height="7" rx="2" fill="#10b981" opacity="0.9"/>
   </svg>`,
 
-  journal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 4h16v16H4z" rx="2"/>
-    <path d="M8 8h8M8 12h8M8 16h5"/>
-    <path d="M4 4v16"/>
-    <rect x="2" y="4" width="3" height="16" rx="1" fill="currentColor" opacity="0.15"/>
+  // 仕訳帳：オレンジ系ノート
+  journal: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="2" width="16" height="20" rx="2" fill="#fed7aa"/>
+    <rect x="4" y="2" width="4" height="20" rx="2" fill="#f97316"/>
+    <rect x="9" y="7" width="8" height="1.5" rx=".75" fill="#c2410c"/>
+    <rect x="9" y="11" width="8" height="1.5" rx=".75" fill="#c2410c" opacity="0.6"/>
+    <rect x="9" y="15" width="5" height="1.5" rx=".75" fill="#c2410c" opacity="0.4"/>
   </svg>`,
 
-  ledger: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-    <path d="M3 9h18M3 15h18M9 9v9M15 9v9"/>
+  // 元帳：エメラルド系テーブル
+  ledger: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="20" height="20" rx="3" fill="#d1fae5"/>
+    <rect x="2" y="2" width="20" height="6" rx="3" fill="#10b981"/>
+    <rect x="2" y="6" width="20" height="2" fill="#10b981"/>
+    <rect x="11" y="8" width="1.5" height="14" fill="#6ee7b7"/>
+    <rect x="2" y="14" width="20" height="1.5" fill="#6ee7b7" opacity="0.5"/>
   </svg>`,
 
-  tax: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M9 9h.01M15 15h.01"/>
-    <path d="M15 9L9 15"/>
-    <path d="M9 8.5a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1zM15 14.5a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1z" fill="currentColor" stroke="none"/>
+  // 消費税：イエロー系％サークル
+  tax: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#fef9c3"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="#eab308" stroke-width="2"/>
+    <line x1="8" y1="16" x2="16" y2="8" stroke="#ca8a04" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="8.5" cy="8.5" r="2" fill="#eab308"/>
+    <circle cx="15.5" cy="15.5" r="2" fill="#eab308"/>
   </svg>`,
 
-  report: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"/>
-    <path d="M14 3v6h6"/>
-    <path d="M8 13h8M8 17h5"/>
+  // 決算：ブルー系ファイル
+  report: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 2h9l5 5v15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#dbeafe"/>
+    <path d="M14 2l5 5h-4a1 1 0 0 1-1-1V2z" fill="#3b82f6"/>
+    <rect x="7" y="12" width="10" height="1.5" rx=".75" fill="#2563eb"/>
+    <rect x="7" y="16" width="7" height="1.5" rx=".75" fill="#2563eb" opacity="0.5"/>
+    <path d="M7 9l2 2 4-4" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 
-  // セクション
-  income: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M12 7v10M8 11l4-4 4 4"/>
+  // ===== KPIカード =====
+
+  // 収入：グリーン上矢印
+  income: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#dcfce7"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+    <path d="M12 16V8" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M8 12l4-4 4 4" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 
-  expense: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M12 7v10M8 13l4 4 4-4"/>
+  // 支出：レッド下矢印
+  expense: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#fee2e2"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+    <path d="M12 8v8" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M8 12l4 4 4-4" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 
-  profit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 17l4-4 4 3 5-6 3 2"/>
-    <path d="M21 7h-4v4"/>
-    <rect x="3" y="20" width="18" height="1.5" rx=".75" fill="currentColor" stroke="none" opacity="0.3"/>
+  // 利益：パープル折れ線
+  profit: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 17l4-5 4 3 5-7 3 3" stroke="rgba(255,255,255,0.95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="7" cy="12" r="2" fill="rgba(255,255,255,0.7)"/>
+    <circle cx="11" cy="15" r="2" fill="rgba(255,255,255,0.7)"/>
+    <circle cx="16" cy="8" r="2" fill="rgba(255,255,255,0.7)"/>
+    <circle cx="19" cy="11" r="2" fill="rgba(255,255,255,0.7)"/>
+    <rect x="3" y="20" width="18" height="1.5" rx=".75" fill="rgba(255,255,255,0.3)"/>
   </svg>`,
 
-  budget: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="6" width="20" height="14" rx="2"/>
-    <path d="M16 11a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
-    <path d="M2 10h20"/>
-    <path d="M6 14h2"/>
+  // ===== セクション =====
+
+  // 月次予算：グリーンウォレット
+  budget: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="6" width="22" height="14" rx="3" fill="#d1fae5"/>
+    <rect x="1" y="6" width="22" height="5" rx="3" fill="#34d399" opacity="0.5"/>
+    <rect x="1" y="9" width="22" height="2" fill="#34d399" opacity="0.5"/>
+    <rect x="1" y="6" width="22" height="14" rx="3" fill="none" stroke="#10b981" stroke-width="1.5"/>
+    <circle cx="17" cy="14" r="2.5" fill="#10b981"/>
+    <circle cx="17" cy="14" r="1" fill="#d1fae5"/>
+    <rect x="3" y="13" width="5" height="1.5" rx=".75" fill="#6ee7b7"/>
   </svg>`,
 
-  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 20V10l5-3 5 3 5-5"/>
-    <path d="M3 20h18"/>
-    <circle cx="8" cy="7" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="13" cy="10" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="18" cy="5" r="1" fill="currentColor" stroke="none"/>
+  // 月次グラフ：マルチカラー棒グラフ
+  chart: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="14" width="4" height="7" rx="1" fill="#6366f1"/>
+    <rect x="10" y="8" width="4" height="13" rx="1" fill="#10b981"/>
+    <rect x="17" y="11" width="4" height="10" rx="1" fill="#f97316"/>
+    <rect x="2" y="21" width="20" height="1.5" rx=".75" fill="#94a3b8"/>
+    <path d="M4 13l5-4 5 3 5-6" stroke="#eab308" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="14" cy="12" r="1.5" fill="#eab308"/>
   </svg>`,
 
-  donut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <circle cx="12" cy="12" r="4"/>
-    <path d="M12 3a9 9 0 0 1 9 9" stroke-width="3" opacity="0.4"/>
+  // 科目別：レインボードーナツ
+  donut: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3z" fill="#f1f5f9"/>
+    <path d="M12 3a9 9 0 0 1 9 9" stroke="#6366f1" stroke-width="4" stroke-linecap="butt" fill="none"/>
+    <path d="M21 12a9 9 0 0 1-4.5 7.8" stroke="#10b981" stroke-width="4" stroke-linecap="butt" fill="none"/>
+    <path d="M16.5 19.8A9 9 0 0 1 3 12" stroke="#f97316" stroke-width="4" stroke-linecap="butt" fill="none"/>
+    <path d="M3 12a9 9 0 0 1 9-9" stroke="#eab308" stroke-width="4" stroke-linecap="butt" fill="none"/>
+    <circle cx="12" cy="12" r="5" fill="white"/>
+    <circle cx="12" cy="12" r="2" fill="#e2e8f0"/>
   </svg>`,
 
-  calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2"/>
-    <path d="M3 9h18"/>
-    <path d="M8 2v4M16 2v4"/>
-    <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="8" cy="18" r="1" fill="currentColor" stroke="none"/>
-    <circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/>
+  // カレンダー：スカイブルー
+  calendar: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="4" width="20" height="18" rx="3" fill="#e0f2fe"/>
+    <rect x="2" y="4" width="20" height="7" rx="3" fill="#0ea5e9"/>
+    <rect x="2" y="9" width="20" height="2" fill="#0ea5e9"/>
+    <rect x="6" y="2" width="3" height="5" rx="1.5" fill="#0284c7"/>
+    <rect x="15" y="2" width="3" height="5" rx="1.5" fill="#0284c7"/>
+    <circle cx="7" cy="16" r="1.3" fill="#0ea5e9"/>
+    <circle cx="12" cy="16" r="1.3" fill="#0ea5e9"/>
+    <circle cx="17" cy="16" r="1.3" fill="#0ea5e9"/>
+    <circle cx="7" cy="20" r="1.3" fill="#bae6fd"/>
+    <circle cx="12" cy="20" r="1.3" fill="#bae6fd"/>
   </svg>`,
 
-  kasji: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 12h18"/>
-    <path d="M3 6h18"/>
-    <path d="M3 18h18"/>
-    <rect x="12" y="4" width="9" height="4" rx="1" fill="currentColor" opacity="0.2" stroke="none"/>
-    <rect x="12" y="10" width="9" height="4" rx="1" fill="currentColor" opacity="0.2" stroke="none"/>
+  // 家事按分：オレンジ家アイコン
+  kasji: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" fill="#ffedd5"/>
+    <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" fill="none" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="9" y="14" width="6" height="8" rx="1" fill="#fed7aa"/>
+    <rect x="14" y="10" width="5" height="4" rx="1" fill="#fb923c" opacity="0.6"/>
+    <path d="M14.5 10.5v3" stroke="#ea580c" stroke-width="1" stroke-linecap="round"/>
+    <line x1="12" y1="3" x2="12" y2="5" stroke="#ea580c" stroke-width="2" stroke-linecap="round"/>
   </svg>`,
 
-  taxSummary: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 14l2 2 4-4"/>
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-    <path d="M3 9h18"/>
-    <path d="M9 3v6"/>
+  // 消費税サマリー：ゴールドチェックリスト
+  taxSummary: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="20" height="20" rx="3" fill="#fef9c3"/>
+    <rect x="2" y="2" width="20" height="20" rx="3" fill="none" stroke="#eab308" stroke-width="1.5"/>
+    <rect x="2" y="2" width="20" height="6" rx="3" fill="#fde047" opacity="0.6"/>
+    <rect x="2" y="6" width="20" height="2" fill="#fde047" opacity="0.6"/>
+    <path d="M7 13l2 2 4-4" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="14" y="12.5" width="6" height="1.5" rx=".75" fill="#ca8a04" opacity="0.5"/>
+    <rect x="7" y="17" width="13" height="1.5" rx=".75" fill="#ca8a04" opacity="0.3"/>
   </svg>`,
 
-  recent: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M12 7v5l3 3"/>
+  // 最近の仕訳：シアン時計
+  recent: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#cffafe"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="#06b6d4" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="1.5" fill="#0891b2"/>
+    <path d="M12 7v5" stroke="#0891b2" stroke-width="2" stroke-linecap="round"/>
+    <path d="M12 12l3.5 3.5" stroke="#0891b2" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="5" r="1" fill="#67e8f9"/>
+    <circle cx="19" cy="12" r="1" fill="#67e8f9"/>
+    <circle cx="5" cy="12" r="1" fill="#67e8f9"/>
+    <circle cx="12" cy="19" r="1" fill="#67e8f9"/>
   </svg>`,
 
-  import: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <path d="M7 10l5 5 5-5"/>
-    <path d="M12 15V3"/>
+  // インポート：パープルダウンロード
+  import: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="16" width="20" height="6" rx="2" fill="#ede9fe"/>
+    <rect x="2" y="16" width="20" height="6" rx="2" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+    <path d="M12 3v11" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M7 10l5 5 5-5" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="18" cy="19" r="1.5" fill="#8b5cf6"/>
   </svg>`,
 
-  alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-    <path d="M12 9v4M12 17h.01"/>
+  // アラート：アンバー三角形
+  alert: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3L2 20h20L12 3z" fill="#fef3c7"/>
+    <path d="M12 3L2 20h20L12 3z" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linejoin="round"/>
+    <rect x="11" y="9" width="2" height="6" rx="1" fill="#d97706"/>
+    <circle cx="12" cy="17" r="1.2" fill="#d97706"/>
   </svg>`,
 
-  // フォームアイコン
-  date: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2"/>
-    <path d="M3 9h18M8 2v4M16 2v4"/>
+  // ===== フォームラベル用（小サイズ最適化） =====
+
+  // 日付：ブルーカレンダー
+  date: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="5" width="18" height="16" rx="2" fill="#dbeafe"/>
+    <rect x="3" y="5" width="18" height="6" rx="2" fill="#3b82f6"/>
+    <rect x="3" y="9" width="18" height="2" fill="#3b82f6"/>
+    <rect x="7" y="3" width="2.5" height="5" rx="1.25" fill="#1d4ed8"/>
+    <rect x="14.5" y="3" width="2.5" height="5" rx="1.25" fill="#1d4ed8"/>
+    <circle cx="8" cy="16" r="1.2" fill="#3b82f6"/>
+    <circle cx="12" cy="16" r="1.2" fill="#3b82f6"/>
+    <circle cx="16" cy="16" r="1.2" fill="#3b82f6"/>
   </svg>`,
 
-  debit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 5v14M5 12l7-7 7 7"/>
-    <rect x="3" y="18" width="18" height="2" rx="1" fill="currentColor" opacity="0.2" stroke="none"/>
+  // 借方：グリーン上矢印（細め）
+  debit: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#dcfce7"/>
+    <path d="M12 16V9" stroke="#16a34a" stroke-width="2" stroke-linecap="round"/>
+    <path d="M8.5 12.5l3.5-3.5 3.5 3.5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="7" y="17" width="10" height="1.5" rx=".75" fill="#86efac"/>
   </svg>`,
 
-  credit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 19V5M5 12l7 7 7-7"/>
-    <rect x="3" y="4" width="18" height="2" rx="1" fill="currentColor" opacity="0.2" stroke="none"/>
+  // 貸方：レッド下矢印（細め）
+  credit: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#fee2e2"/>
+    <path d="M12 8v7" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+    <path d="M8.5 11.5l3.5 3.5 3.5-3.5" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="7" y="6" width="10" height="1.5" rx=".75" fill="#fca5a5"/>
   </svg>`,
 
-  memo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M11 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/>
-    <path d="M18 2l4 4-9 9H9v-4l9-9z"/>
+  // 摘要：オレンジ鉛筆
+  memo: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17 3l4 4-12 12H5v-4L17 3z" fill="#fed7aa"/>
+    <path d="M17 3l4 4-12 12H5v-4L17 3z" fill="none" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M15 5l4 4" stroke="#ea580c" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="3" y="20" width="9" height="1.5" rx=".75" fill="#fdba74"/>
   </svg>`,
 
-  kasjiForm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <path d="M9 22V12h6v10"/>
+  // 家事按分フォーム：オレンジ家（小）
+  kasjiForm: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 11L12 3l9 8v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V11z" fill="#ffedd5"/>
+    <path d="M3 11L12 3l9 8v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V11z" fill="none" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="9" y="15" width="6" height="7" rx="1" fill="#fed7aa"/>
+    <line x1="12" y1="3.5" x2="12" y2="6" stroke="#ea580c" stroke-width="2" stroke-linecap="round"/>
   </svg>`,
 
-  account: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-    <path d="M2 10h20"/>
-    <circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/>
+  // 勘定科目：パープルカード
+  account: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="6" width="20" height="13" rx="2.5" fill="#ede9fe"/>
+    <rect x="2" y="6" width="20" height="13" rx="2.5" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+    <rect x="2" y="9" width="20" height="3" fill="#a78bfa" opacity="0.4"/>
+    <rect x="5" y="15" width="5" height="1.5" rx=".75" fill="#8b5cf6" opacity="0.5"/>
+    <circle cx="18" cy="15.7" r="2" fill="#8b5cf6"/>
+    <circle cx="18" cy="15.7" r=".8" fill="#ede9fe"/>
   </svg>`,
 
-  taxForm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-    <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+  // 税区分：ゴールド積み重ね
+  taxForm: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3L2 7.5l10 4.5 10-4.5L12 3z" fill="#fde047"/>
+    <path d="M2 12l10 4.5L22 12" stroke="#ca8a04" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M2 16.5l10 4.5 10-4.5" stroke="#ca8a04" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
   </svg>`,
 
-  amount: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+  // 金額：グリーン円マーク
+  amount: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#dcfce7"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+    <path d="M12 5v14" stroke="#15803d" stroke-width="2" stroke-linecap="round"/>
+    <path d="M15.5 8H10a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8.5" stroke="#15803d" stroke-width="1.8" stroke-linecap="round"/>
   </svg>`,
 
-  // 決算・エクスポート
-  pl: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="3" width="20" height="18" rx="2"/>
-    <path d="M8 7h8M8 11h8M8 15h5"/>
-    <path d="M2 7h20" opacity="0.3"/>
+  // ===== 決算・エクスポート =====
+
+  // 損益計算書：ブルードキュメント
+  pl: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="2" width="18" height="20" rx="2.5" fill="#dbeafe"/>
+    <rect x="3" y="2" width="18" height="7" rx="2.5" fill="#3b82f6" opacity="0.3"/>
+    <rect x="3" y="7" width="18" height="2" fill="#3b82f6" opacity="0.3"/>
+    <rect x="6" y="11" width="12" height="1.5" rx=".75" fill="#2563eb"/>
+    <rect x="6" y="14.5" width="8" height="1.5" rx=".75" fill="#2563eb" opacity="0.6"/>
+    <rect x="6" y="18" width="5" height="1.5" rx=".75" fill="#2563eb" opacity="0.3"/>
+    <path d="M6 9l2 2 3-3" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 
-  bs: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="3" width="20" height="18" rx="2"/>
-    <path d="M12 3v18"/>
-    <path d="M2 12h20" opacity="0.3"/>
-    <path d="M6 7h3M6 10h2M6 15h3M6 18h2"/>
-    <path d="M15 7h3M15 10h2M15 15h3M15 18h2"/>
+  // 貸借対照表：ティールテーブル
+  bs: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="3" width="20" height="18" rx="2.5" fill="#ccfbf1"/>
+    <rect x="2" y="3" width="20" height="18" rx="2.5" fill="none" stroke="#14b8a6" stroke-width="1.5"/>
+    <rect x="12" y="3" width="1.5" height="18" fill="#14b8a6" opacity="0.4"/>
+    <rect x="2" y="9" width="20" height="1.5" fill="#14b8a6" opacity="0.3"/>
+    <rect x="2" y="15" width="20" height="1.5" fill="#14b8a6" opacity="0.3"/>
+    <rect x="4" y="5.5" width="6" height="1.5" rx=".75" fill="#0d9488"/>
+    <rect x="4" y="11" width="5" height="1.5" rx=".75" fill="#0d9488" opacity="0.7"/>
+    <rect x="4" y="17" width="4" height="1.5" rx=".75" fill="#0d9488" opacity="0.4"/>
+    <rect x="14.5" y="5.5" width="5" height="1.5" rx=".75" fill="#0d9488"/>
+    <rect x="14.5" y="11" width="4" height="1.5" rx=".75" fill="#0d9488" opacity="0.7"/>
   </svg>`,
 
-  export: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <path d="M17 8l-5-5-5 5"/>
-    <path d="M12 3v12"/>
+  // エクスポート：ローズアップロード
+  export: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="16" width="20" height="6" rx="2" fill="#fce7f3"/>
+    <rect x="2" y="16" width="20" height="6" rx="2" fill="none" stroke="#ec4899" stroke-width="1.5"/>
+    <path d="M12 14V3" stroke="#be185d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M7 8l5-5 5 5" stroke="#be185d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="18" cy="19" r="1.5" fill="#ec4899"/>
+    <circle cx="14" cy="19" r="1.5" fill="#f9a8d4"/>
   </svg>`,
 
-  settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  // 設定：グレー歯車
+  settings: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#f1f5f9"/>
+    <circle cx="12" cy="12" r="10" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="3.5" fill="#64748b"/>
+    <circle cx="12" cy="12" r="1.5" fill="#f1f5f9"/>
+    <rect x="11" y="2.5" width="2" height="3" rx="1" fill="#94a3b8"/>
+    <rect x="11" y="18.5" width="2" height="3" rx="1" fill="#94a3b8"/>
+    <rect x="2.5" y="11" width="3" height="2" rx="1" fill="#94a3b8"/>
+    <rect x="18.5" y="11" width="3" height="2" rx="1" fill="#94a3b8"/>
+    <rect x="5.3" y="5.3" width="2" height="3" rx="1" fill="#94a3b8" transform="rotate(45 5.3 5.3)"/>
+    <rect x="16.7" y="16.7" width="2" height="3" rx="1" fill="#94a3b8" transform="rotate(45 16.7 16.7)"/>
+    <rect x="5.3" y="16.7" width="3" height="2" rx="1" fill="#94a3b8" transform="rotate(45 5.3 16.7)"/>
+    <rect x="16.7" y="5.3" width="3" height="2" rx="1" fill="#94a3b8" transform="rotate(45 16.7 5.3)"/>
   </svg>`,
 
-  ledgerAccount: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-    <path d="M8 7h8M8 11h6M8 15h4"/>
-  </svg>`,
 };
 
-// アイコンをSVG文字列で返すヘルパー
+// アイコンをSVG文字列で返すヘルパー（classを付与）
 function icon(name, cls = '') {
   const svg = ICONS[name];
   if (!svg) return '';
-  // classをrootのsvgタグに付与
   return svg.replace('<svg ', `<svg class="icon ${cls}" `);
 }
