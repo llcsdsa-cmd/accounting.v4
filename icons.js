@@ -328,6 +328,46 @@ const ICONS = {
     <rect x="10" y="17.8" width="7" height="1.5" rx=".75" fill="#cbd5e1"/>
   </svg>`,
 
+  // ===== 設定ページ =====
+
+  // 設定ナビ：グレー歯車（ナビ用）
+  settingsNav: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="3" fill="#94a3b8"/>
+    <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="6" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+  </svg>`,
+
+  // クラウド保存先：空色クラウド
+  cloud: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 10a6 6 0 0 0-11.8-1.5A5 5 0 1 0 6 19h12a4 4 0 0 0 0-8z" fill="#e0f2fe"/>
+    <path d="M18 10a6 6 0 0 0-11.8-1.5A5 5 0 1 0 6 19h12a4 4 0 0 0 0-8z" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M12 22v-6M9 19l3-3 3 3" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+
+  // バックアップ：アンバーシールド
+  backupIcon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V6L12 2z" fill="#fef3c7"/>
+    <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V6L12 2z" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+    <path d="M12 8v4M12 14v.5" stroke="#d97706" stroke-width="2" stroke-linecap="round"/>
+  </svg>`,
+
+  // 復元：グリーン時計矢印
+  restoreIcon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="9" fill="#dcfce7"/>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+    <path d="M12 7v5l3 3" stroke="#15803d" stroke-width="2" stroke-linecap="round"/>
+    <path d="M5 5l2 2-2 2" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+
+  // 危険ゾーン：レッドゴミ箱
+  dangerIcon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 6h18" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M8 6V4h8v2" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="5" y="6" width="14" height="15" rx="2" fill="#fee2e2"/>
+    <rect x="5" y="6" width="14" height="15" rx="2" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+    <path d="M10 11v5M14 11v5" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`,
+
 };
 
 // アイコンをSVG文字列で返すヘルパー（classを付与）

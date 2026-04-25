@@ -5,6 +5,7 @@ let currentPage = 'dashboard';
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', () => {
+  handleOAuthCallback(); // OAuthリダイレクト処理
   initIcons();
   initAccountSelects();
   initJournalMonth();
@@ -12,18 +13,20 @@ document.addEventListener('DOMContentLoaded', () => {
   initChartYearSelect();
   loadTaxSettings();
   renderAll();
+  renderSettingsPage();
   navigate('dashboard');
 });
 
 // ===== アイコン初期化 =====
 function initIcons() {
   const navMap = {
-    'nav-icon-dashboard': 'dashboard',
-    'nav-icon-journal':   'journal',
-    'nav-icon-ledger':    'ledger',
-    'nav-icon-tax':       'tax',
-    'nav-icon-dencho':    'dencho',
-    'nav-icon-report':    'report',
+    'nav-icon-dashboard':    'dashboard',
+    'nav-icon-journal':      'journal',
+    'nav-icon-ledger':       'ledger',
+    'nav-icon-tax':          'tax',
+    'nav-icon-dencho':       'dencho',
+    'nav-icon-report':       'report',
+    'nav-icon-settings-tab': 'settingsNav',
   };
   Object.entries(navMap).forEach(([id, name]) => {
     const el = document.getElementById(id);
@@ -44,8 +47,12 @@ function initIcons() {
     'sec-icon-pl':          'pl',
     'sec-icon-bs':          'bs',
     'sec-icon-export':      'export',
-    'sec-icon-search':      'search',
-    'sec-icon-checklist':   'checklist',
+    'sec-icon-cloud':        'cloud',
+    'sec-icon-backup-set':   'backupIcon',
+    'sec-icon-import-map':   'import',
+    'sec-icon-datamanage':   'dangerIcon',
+    'sec-icon-search':       'search',
+    'sec-icon-checklist':    'checklist',
   };
   Object.entries(secMap).forEach(([id, name]) => {
     const el = document.getElementById(id);
@@ -91,6 +98,8 @@ function initIcons() {
     'exp-icon-journal': 'journal',
     'exp-icon-pl':      'pl',
     'exp-icon-tax':     'tax',
+    'exp-icon-backup':  'backupIcon',
+    'exp-icon-restore': 'restoreIcon',
   };
   Object.entries(expMap).forEach(([id, name]) => {
     const el = document.getElementById(id);
@@ -105,6 +114,7 @@ function renderAll() {
   renderTax();
   renderReport();
   renderDencho();
+  renderSettingsPage();
 }
 
 // ===== ナビゲーション =====
@@ -115,6 +125,20 @@ function navigate(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.querySelector(`[data-page="${page}"]`).classList.add('active');
   document.getElementById('main-content').scrollTop = 0;
+  if (page === 'settings') {
+    renderSettingsPage();
+    // 設定ページのsec-iconを注入
+    const settingsSecMap = {
+      'sec-icon-cloud':      'cloud',
+      'sec-icon-backup-set': 'backupIcon',
+      'sec-icon-import-map': 'import',
+      'sec-icon-datamanage': 'dangerIcon',
+    };
+    Object.entries(settingsSecMap).forEach(([id, name]) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = icon(name, 'sec-svg');
+    });
+  }
 }
 
 // ===== 勘定科目セレクト初期化 =====
@@ -383,7 +407,17 @@ function deleteEntry(id) {
 }
 
 function saveData() {
-  localStorage.setItem('kaikei_entries', JSON.stringify(entries));
+  const data = {
+    entries,
+    taxSettings,
+    dencho: typeof dencho !== 'undefined' ? dencho : [],
+    budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}'),
+  };
+  saveAllData(data).then(({ primaryOk }) => {
+    if (!primaryOk && storageSettings.primary !== 'local') {
+      showToast(`${providerLabel(storageSettings.primary)} への保存失敗 — ローカルに保存済`, 'error');
+    }
+  });
 }
 
 // ===== ダッシュボード =====

@@ -1224,3 +1224,118 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
 
 /* エクスポートボタン */
 .dencho-export-btn { font-size: 13px; }
+
+/* ===== 設定ページ ===== */
+
+/* ストレージ状態バー */
+.storage-status-bar {
+  display: flex;
+  margin: 10px 16px 0;
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.status-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+}
+.status-item + .status-item { border-left: 0.5px solid var(--color-border); }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: #d1d5db;
+}
+.status-item.ok .status-dot  { background: #22c55e; }
+.status-item.warn .status-dot { background: #f59e0b; }
+.status-label { font-size: 10px; color: var(--color-muted); }
+.status-val   { font-size: 12px; font-weight: 600; margin-top: 1px; }
+.status-divider { width: 0.5px; background: var(--color-border); }
+
+/* プロバイダカード */
+.provider-card {
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.provider-card:last-child { margin-bottom: 0; }
+.provider-card.is-primary { border-color: var(--provider-color, #3d4a6b); }
+
+.provider-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.provider-icon { font-size: 24px; flex-shrink: 0; }
+.provider-info { flex: 1; min-width: 0; }
+.provider-name { font-size: 14px; font-weight: 700; }
+.provider-desc { font-size: 11px; color: var(--color-muted); margin-top: 1px; }
+
+.provider-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 9999px; flex-shrink: 0;
+}
+.connected-badge    { background: #dcfce7; color: #15803d; }
+.disconnected-badge { background: #f1f5f9; color: #64748b; }
+
+/* プロバイダ設定入力 */
+.provider-config { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.prov-input {
+  width: 100%;
+  background: var(--color-bg);
+  border: 0.5px solid var(--color-border-mid);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+.prov-input:focus { outline: none; border-color: var(--provider-color, #3d4a6b); }
+.prov-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.prov-error { font-size: 12px; color: var(--color-expense); display: none; }
+
+/* プロバイダアクションボタン */
+.provider-actions { display: flex; gap: 8px; }
+.prov-btn {
+  flex: 1; padding: 9px 8px;
+  border-radius: 8px; font-size: 12px; font-weight: 600;
+  border: 0.5px solid var(--color-border-mid);
+  background: var(--color-surface); color: var(--color-text);
+  cursor: pointer; text-align: center;
+}
+.prov-btn:disabled { opacity: 0.4; cursor: default; }
+.prov-primary-btn    { border-color: #c4b5fd; color: #6d28d9; }
+.prov-primary-active { background: #6d28d9; color: #fff; border-color: transparent; }
+.prov-backup-btn     { border-color: #6ee7b7; color: #065f46; }
+.prov-backup-active  { background: #10b981; color: #fff; border-color: transparent; }
+.prov-connect-btn    { background: var(--color-text); color: var(--color-surface); border-color: transparent; }
+.prov-disconnect-btn { border-color: #fca5a5; color: #991b1b; }
+
+/* データ管理 */
+.data-stat-row {
+  display: flex; gap: 10px; margin-bottom: 12px;
+}
+.data-stat {
+  flex: 1; text-align: center;
+  background: var(--color-bg);
+  border-radius: 10px; padding: 10px 6px;
+}
+.data-actions { display: flex; flex-direction: column; gap: 8px; }
+.danger-btn  {
+  background: #fff1f2; border: 0.5px solid #fca5a5;
+  color: #991b1b; border-radius: 10px;
+  padding: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* インポートマッピング */
+.map-notice {
+  font-size: 12px; color: var(--color-muted);
+  background: var(--color-bg); border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 10px;
+}

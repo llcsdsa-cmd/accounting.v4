@@ -38,10 +38,16 @@
       <span class="tab-icon-svg" id="nav-icon-report"></span>
       <span class="tab-label">決算</span>
     </button>
+    <button class="nav-tab" data-page="settings" onclick="navigate('settings')">
+      <span class="tab-icon-svg" id="nav-icon-settings-tab"></span>
+      <span class="tab-label">設定</span>
+    </button>
   </div>
 </nav>
 
 <main class="main-content" id="main-content">
+
+<div id="storage-warning" style="display:none" class="storage-warning-bar"></div>
 
   <!-- ダッシュボード -->
   <div class="page active" id="page-dashboard">
@@ -399,7 +405,60 @@
     </div>
   </div>
 
+  <!-- 設定 -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <h1 class="page-title">設定</h1>
+    </div>
+
+    <!-- ストレージ状態バー -->
+    <div class="storage-status-bar" id="storage-status-bar"></div>
+
+    <!-- クラウド保存先 -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title-row"><span class="sec-icon" id="sec-icon-cloud"></span>データ保存先</span>
+      </div>
+      <div id="provider-cards"></div>
+    </div>
+
+    <!-- バックアップ設定 -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title-row"><span class="sec-icon" id="sec-icon-backup-set"></span>バックアップ設定</span>
+      </div>
+      <div id="backup-settings-body"></div>
+    </div>
+
+    <!-- インポート自動振り分け -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title-row"><span class="sec-icon" id="sec-icon-import-map"></span>CSVインポート設定</span>
+      </div>
+      <div id="import-mapping-body"></div>
+    </div>
+
+    <!-- データ管理 -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-title-row"><span class="sec-icon" id="sec-icon-datamanage"></span>データ管理</span>
+      </div>
+      <div id="data-management-body"></div>
+    </div>
+  </div>
+
 </main>
+
+<!-- 設定サブモーダル（OAuthトークン入力） -->
+<div class="modal-overlay" id="settings-sub-modal" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">クラウド接続設定</h2>
+      <button class="modal-close" onclick="document.getElementById('settings-sub-modal').style.display='none'">✕</button>
+    </div>
+    <div class="modal-body" id="settings-sub-body"></div>
+  </div>
+</div>
 
 <!-- 仕訳モーダル -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
@@ -537,6 +596,8 @@
 
 <script src="accounts.js"></script>
 <script src="icons.js"></script>
+<script src="storage.js"></script>
+<script src="settings.js"></script>
 <script src="dencho.js"></script>
 <script src="app.js"></script>
 </body>
