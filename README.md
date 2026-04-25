@@ -1,75 +1,89 @@
-# 青色申告 複式簿記 会計アプリ v3.0
+# 勘定科目 自動分類エンジン
 
-PRiMPO連携 / 電子帳簿保存法対応 / クラウド保存対応の青色申告準拠 会計Webアプリです。  
-GitHub Pagesでそのまま動作します（ビルド不要）。
+PRiMPOからエクスポートしたCSVを読み込み、摘要テキストを形態素解析して勘定科目に自動分類します。
+使えば使うほど精度が上がる学習機能付きです。
+
+## セットアップ
+
+```bash
+pip install scikit-learn pandas
+
+# MeCabを使う場合（任意・高精度）
+# macOS: brew install mecab mecab-ipadic && pip install mecab-python3 unidic-lite
+# Ubuntu: sudo apt install mecab libmecab-dev mecab-ipadic-utf8 && pip install mecab-python3
+```
+
+## 基本的な使い方（ループ）
+
+```
+PRiMPOからCSVをエクスポート
+        ↓
+python classifier.py --classify input.csv
+        ↓
+output_classified.csv を開いて correct_account 列に正解を入力
+        ↓
+python classifier.py --learn output_classified.csv
+        ↓
+python classifier.py --train
+        ↓
+精度が上がる → 最初に戻る
+```
+
+## コマンド一覧
+
+```bash
+# CSVを分類する
+python classifier.py --classify 入力.csv
+python classifier.py --classify 入力.csv --output 出力先.csv
+
+# 正解ラベルを学習データに追加
+python classifier.py --learn 修正済み.csv
+
+# モデルを再学習
+python classifier.py --train
+
+# 精度評価
+python classifier.py --evaluate
+
+# 分類統計を見る
+python classifier.py --stats
+
+# キーワードルールを追加
+python classifier.py --add-rule 旅費交通費 'suica,icoca,電車,バス'
+
+# 会計アプリ用JSONに変換
+python export_to_app.py --input output_classified.csv --output kaikei_import.json
+
+# テスト実行（全機能確認）
+python test_classifier.py
+```
 
 ## ファイル構成
 
-```
-index.html   — メインHTML（画面レイアウト）
-style.css    — スタイルシート（iPhone 14 Pro Max最適化）
-accounts.js  — 勘定科目マスタ（青色申告対応）
-icons.js     — カラフルSVGアイコンセット
-app.js       — アプリロジック（複式簿記エンジン）
-dencho.js    — 電子帳簿保存法対応モジュール
-storage.js   — クラウドストレージエンジン
-settings.js  — 設定ページUI・ロジック
-```
-
-## 主な機能
-
-- **複式簿記エンジン** — 借方・貸方の二重記帳、貸借バランスチェック
-- **青色申告対応** — 損益計算書（P/L）・貸借対照表（B/S）
-- **消費税管理** — 10%/8%軽減/非課税、本則課税・簡易課税・免税事業者
-- **家事按分** — 仕訳ごとに事業割合（%）を設定
-- **PRiMPO CSV インポート** — 取込と同時に仕訳帳へ即時振り分け・ダッシュボード更新
-- **電子帳簿保存法対応** — SHA-256ハッシュ・変更履歴・7要件検索・電帳法CSV出力
-- **クラウド保存** — Google Drive / Dropbox / OneDrive / WebDAV から選択
-- **自動バックアップ** — 毎日/週1/保存のたびに自動バックアップ
-
-## クラウド接続の事前準備
-
-### Google Drive
-1. Google Cloud Console でプロジェクト作成
-2. OAuth 2.0 クライアントID を取得（Web アプリケーション）
-3. リダイレクト URI に GitHub Pages の URL を登録
-4. 設定ページ → Google Drive → Client ID を入力 → ログイン
-
-### Dropbox
-1. Dropbox Developers でアプリ作成
-2. App Key を取得
-3. Redirect URIs に GitHub Pages の URL を登録
-4. 設定ページ → Dropbox → App Key を入力 → ログイン
-
-### OneDrive
-1. Azure Portal → App Registration でアプリ登録
-2. Client ID を取得
-3. Redirect URI を登録（Implicit grant: Access tokens を有効化）
-4. 設定ページ → OneDrive → Client ID を入力 → ログイン
-
-### WebDAV（Nextcloud等）
-1. 設定ページ → WebDAV → URL・ユーザー名・パスワードを入力
-2. 「接続テスト」でOKを確認
-
-## GitHub Pages デプロイ手順
-
-1. このリポジトリを GitHub にプッシュ
-2. Settings → Pages → Deploy from a branch → main / root → Save
-3. 数分後に `https://<username>.github.io/<repo>/` でアクセス可能
-
-## PRiMPO CSV フォーマット
-
-| 列 | 内容 |
+| ファイル | 役割 |
 |---|---|
-| A | 日付（YYYY-MM-DD） |
-| B | 内容・摘要 |
-| C | 金額（正=収入、負=支出） |
-| D | カテゴリ（任意） |
+| `classifier.py` | 分類エンジン本体・CLIインターフェース |
+| `tokenizer.py` | 形態素解析（MeCab自動切替） |
+| `export_to_app.py` | 分類済みCSV→会計アプリJSON変換 |
+| `test_classifier.py` | テスト・サンプルデータ生成 |
+| `training_data.csv` | 学習データ蓄積ファイル（自動生成） |
+| `model.pkl` | 学習済みモデル（自動生成） |
+| `rules.json` | キーワードルール（自動生成・編集可能） |
+| `history.json` | 分類履歴ログ（自動生成） |
 
-取込時に設定ページの「CSVインポート設定」で指定した勘定科目・税区分が自動適用されます。
+## 会計アプリへの取り込み
 
-## 注意事項
+```bash
+python export_to_app.py --input output_classified.csv --output kaikei_import.json
+```
 
-- 申告の際は税理士に確認してください。
-- クラウド接続にはOAuth認証が必要です（トークンはブラウザのlocalStorageに保存）。
-- データは常にローカル（localStorage）にもフォールバック保存されます。
+→ 会計アプリの「設定 → データ管理 → バックアップから復元」で `kaikei_import.json` を選択
+
+## 精度の目安
+
+| 学習データ件数 | 期待精度 |
+|---|---|
+| 0件（ルールのみ） | 70〜80% |
+| 30件 | 85〜90% |
+| 100件 | 90〜95% |
+| 300件以上 | 95%超 |
