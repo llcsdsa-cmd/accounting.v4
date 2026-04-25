@@ -46,13 +46,13 @@ BANK_ACCOUNT = "普通預金"
 
 
 def normalize_amount(val: str) -> float:
-    """金額文字列を数値に変換"""
-    val = unicodedata.normalize("NFKC", str(val))
-    val = re.sub(r"[¥￥,\s]", "", val)
-    try:
-        return float(val)
-    except ValueError:
-        return 0.0
+    # 日本語ヘッダーと英語ヘッダーの両方に対応できるように修正
+    date        = (row.get("date") or row.get("日付") or "").strip()
+    description = (row.get("description") or row.get("取引内容/商品名") or row.get("取引先・品名") or "").strip()
+    amount_raw  = row.get("amount") or row.get("金額") or "0"
+    account     = (row.get("predicted_account") or row.get("勘定科目") or "消耗品費").strip()
+    confidence  = float(row.get("confidence") or row.get("confidence", 0.5))
+
 
 
 def build_entry(row: dict, idx: int) -> dict | None:
