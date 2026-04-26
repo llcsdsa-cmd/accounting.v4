@@ -296,15 +296,15 @@ class AccountClassifier:
         # キーワードルール分類
         rule_account, rule_confidence = classify_by_rules(text, self.rules)
 
-        # 判定ロジック
-        if self.model and ml_confidence >= 0.70:
-            account    = ml_account
-            confidence = ml_confidence
-            method     = "ml_model"
-        elif rule_confidence > 0:
+        # 判定ロジック（キーワードルールを最優先に引き上げ）
+        if rule_confidence > 0:
             account    = rule_account
             confidence = rule_confidence
             method     = "keyword_rule"
+        elif self.model and ml_confidence >= 0.70:
+            account    = ml_account
+            confidence = ml_confidence
+            method     = "ml_model"
         elif self.model:
             account    = ml_account
             confidence = ml_confidence
