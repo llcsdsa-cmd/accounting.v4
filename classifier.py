@@ -364,45 +364,397 @@ class AccountClassifier:
 
 # ===== CLI インターフェース =====
 
-def cmd_classify(input_path: str, output_path: str):
-    """CSVを分類してoutput.csvに出力する"""
-    clf = AccountClassifier()
+def detect_encoding(filepath: str) -> str:
+    """文字コードを自動検出する（BOM優先 → Shift-JIS試行 → UTF-8）"""
+    with open(filepath, "rb") as f:
+        raw = f.read(4096)
+    if raw.startswith(b'\xef\xbb\xbf'):
+        return 'utf-8-sig'
+    if raw.startswith(b'\xff\xfe'):
+        return 'utf-16'
+    # Shift-JIS / CP932 試行
+    for enc in ('cp932', 'shift-jis'):
+        try:
+            raw.decode(enc)
+            return enc
+        except Exception:
+            pass
+    return 'utf-8'
+
+
+def detect_delimiter(first_line: str) -> str:
+    """先頭行から区切り文字を推定する"""
+    counts = {',': first_line.count(','), '\t': first_line.count('\t')}
+    return max(counts, key=counts.get)
+
+
+# 列名の候補（どれかに一致すれば採用）
+COL_ALIASES = {
+    "date":        ["date", "日付", "取引日", "年月日", "Date"],
+    "description": ["description", "内容", "摘要", "件名", "Description",
+                    "取引内容", "備考", "明細", "name", "Name"],
+    "amount":      ["amount", "金額", "取引金額", "Amount", "金額(税込)",
+                    "入出金額", "出金額", "入金額", "価格"],
+}
+
+
+def resolve_column(fieldnames: list[str], col_key: str, override: str = "") -> str:
+    """
+    列名を解決する
+    override が指定された場合はそれを使用。
+    なければ COL_ALIASES でファジーマッチ。
+    """
+    if override and override in fieldnames:
+        return override
+    for alias in COL_ALIASES.get(col_key, []):
+        if alias in fieldnames:
+            return alias
+    # 部分一致フォールバック
+    col_lower = col_key.lower()
+    for f in fieldnames:
+        if col_lower in f.lower():
+            return f
+    return ""
+
+
+def parse_amount(val: str) -> float:
+    """金額文字列を数値に変換（¥・カンマ・全角数字に対応）"""
+    import unicodedata
+    val = unicodedata.normalize("NFKC", str(val))
+    val = val.replace(",", "").replace("¥", "").replace("￥", "").strip()
+    # 括弧は負の金額を表すことがある (1,000) → -1000
+    if val.startswith("(") and val.endswith(")"):
+        val = "-" + val[1:-1]
+    try:
+        return float(val)
+    except ValueError:
+        return 0.0
+
+
+def cmd_classify(
+    input_path: str,
+    output_path: str,
+    encoding: str = "",
+    delimiter: str = "",
+    col_date: str = "",
+    col_desc: str = "",
+    col_amount: str = "",
+):
+    """CSVを分類してoutput.csvに出力する（詳細エラー診断付き）"""
+
+    errors   = []   # 致命的エラー（処理続行不可）
+    warnings = []   # 警告（処理は続行）
+
+    # ============================================================
+    # STEP 1: ファイルの存在・サイズ確認
+    # ============================================================
+    from pathlib import Path
+    p = Path(input_path)
+
+    if not p.exists():
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー: ファイルが見つかりません")
+        print(f"{'='*60}")
+        print(f"  パス : {input_path}")
+        print(f"  確認 : ファイル名・パスにタイポがないか確認してください")
+        print(f"  現在のディレクトリ: {Path.cwd()}")
+        print(f"  このフォルダにあるCSV: {list(Path.cwd().glob('*.csv'))}")
+        return
+
+    size = p.stat().st_size
+    if size == 0:
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー: ファイルが空です（0 bytes）")
+        print(f"{'='*60}")
+        print(f"  パス : {input_path}")
+        print(f"  確認 : PRiMPOで正しくエクスポートできているか確認してください")
+        return
+
+    print(f"\n{'='*60}")
+    print(f"  📂 CSV読み込み診断レポート")
+    print(f"{'='*60}")
+    print(f"  ファイル: {input_path}")
+    print(f"  サイズ  : {size:,} bytes")
+
+    # ============================================================
+    # STEP 2: 生バイト確認（BOM・文字化け検出）
+    # ============================================================
+    with open(input_path, "rb") as f:
+        raw = f.read(min(size, 4096))
+
+    bom_detected = ""
+    if raw.startswith(b'\xef\xbb\xbf'):
+        bom_detected = "UTF-8 BOM"
+    elif raw.startswith(b'\xff\xfe'):
+        bom_detected = "UTF-16 LE BOM"
+    elif raw.startswith(b'\xfe\xff'):
+        bom_detected = "UTF-16 BE BOM"
+
+    null_bytes = raw.count(b'\x00')
+    if null_bytes > 10:
+        warnings.append(f"NULLバイトが {null_bytes}個 検出 → UTF-16の可能性（--encoding utf-16 を試してください）")
+
+    # ============================================================
+    # STEP 3: 文字コード判定
+    # ============================================================
+    enc = encoding or detect_encoding(input_path)
+    if bom_detected:
+        print(f"  BOM    : {bom_detected} 検出")
+    print(f"  文字コード: {enc}{'（自動検出）' if not encoding else '（指定）'}")
+
+    # 実際にデコードを試みる
+    content = None
+    tried_encodings = [enc] if encoding else [enc, 'utf-8', 'utf-8-sig', 'cp932', 'shift-jis', 'utf-16']
+    decode_errors = {}
+
+    for try_enc in tried_encodings:
+        try:
+            with open(input_path, encoding=try_enc, errors='strict') as f:
+                content = f.read()
+            enc = try_enc  # 成功したエンコードを確定
+            print(f"  デコード: ✅ {enc} で成功")
+            break
+        except UnicodeDecodeError as e:
+            decode_errors[try_enc] = f"行{e.lineno if hasattr(e,'lineno') else '?'} 付近: {e.reason}"
+        except Exception as e:
+            decode_errors[try_enc] = str(e)
+
+    if content is None:
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー原因: 文字コードのデコード失敗")
+        print(f"{'='*60}")
+        print(f"\n  試したエンコードと失敗理由:")
+        for enc_tried, reason in decode_errors.items():
+            print(f"    {enc_tried:12s} → {reason}")
+        print(f"\n  先頭バイト（hex）: {raw[:32].hex()}")
+        print(f"\n  ▶ 解決策:")
+        print(f"    1. テキストエディタ（メモ帳・VSCode）でファイルを開き、")
+        print(f"       「名前をつけて保存」→ 文字コード「UTF-8」で保存し直す")
+        print(f"    2. または文字コードを明示して再実行:")
+        print(f"       python classifier.py --classify {input_path} --encoding utf-16")
+        print(f"       python classifier.py --classify {input_path} --encoding shift-jis")
+        return
+
+    # ============================================================
+    # STEP 4: 行数・内容確認
+    # ============================================================
+    all_lines  = content.splitlines()
+    data_lines = [l for l in all_lines if l.strip()]
+
+    print(f"  総行数  : {len(all_lines)}行 （空行除く: {len(data_lines)}行）")
+
+    if len(data_lines) == 0:
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー原因: ファイルに内容がありません")
+        print(f"{'='*60}")
+        print(f"  先頭バイト: {raw[:64].hex()}")
+        print(f"  ▶ 解決策: PRiMPOで再度エクスポートしてください")
+        return
+
+    if len(data_lines) == 1:
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー原因: ヘッダー行のみでデータ行がありません")
+        print(f"{'='*60}")
+        print(f"  ヘッダー: {repr(data_lines[0])}")
+        print(f"  ▶ 解決策: PRiMPOのエクスポート設定でデータ期間が正しく選択されているか確認してください")
+        return
+
+    # 先頭数行を表示
+    print(f"\n  先頭3行（生テキスト）:")
+    for i, line in enumerate(data_lines[:3]):
+        display = line if len(line) <= 80 else line[:80] + "..."
+        print(f"    [{i}] {repr(display)}")
+
+    # ============================================================
+    # STEP 5: 区切り文字判定
+    # ============================================================
+    delim = delimiter or detect_delimiter(data_lines[0])
+    delim_counts = {',': data_lines[0].count(','), '\t': data_lines[0].count('\t')}
+
+    if max(delim_counts.values()) == 0:
+        warnings.append(
+            f"カンマもタブも見つかりません（カンマ:{delim_counts[',']} タブ:{delim_counts[chr(9)]}）"
+            f" → ファイルが1列のみか、区切り文字が特殊な可能性があります"
+        )
+
+    delim_name = {',': 'カンマ(,)', '\t': 'タブ(\\t)'}.get(delim, repr(delim))
+    print(f"\n  区切り文字: {delim_name}{'（指定）' if delimiter else '（自動検出）'}")
+
+    # ============================================================
+    # STEP 6: CSV列名解析
+    # ============================================================
+    import io
+    reader    = csv.DictReader(io.StringIO(content), delimiter=delim)
+    fieldnames = reader.fieldnames or []
+
+    if not fieldnames:
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー原因: ヘッダー行の解析に失敗しました")
+        print(f"{'='*60}")
+        print(f"  先頭行  : {repr(data_lines[0])}")
+        print(f"  区切り  : {delim_name}")
+        print(f"\n  ▶ 解決策:")
+        print(f"    区切り文字を明示してください:")
+        print(f"    python classifier.py --classify {input_path} --delimiter ','")
+        print(f"    python classifier.py --classify {input_path} --delimiter $'\\t'  # タブの場合")
+        return
+
+    print(f"  検出した列: {fieldnames}")
+
+    # ============================================================
+    # STEP 7: 必須列の解決
+    # ============================================================
+    c_date   = resolve_column(fieldnames, "date",        col_date)
+    c_desc   = resolve_column(fieldnames, "description", col_desc)
+    c_amount = resolve_column(fieldnames, "amount",      col_amount)
+
+    print(f"\n  列マッピング:")
+    print(f"    日付列  : {repr(c_date)  or '❌ 未検出（なくても動作します）'}")
+    print(f"    摘要列  : {repr(c_desc)  or '⚠ 未検出 → 全列を結合してテキスト化します'}")
+    print(f"    金額列  : {repr(c_amount) or '⚠ 未検出 → 全件 支出として扱います'}")
+
+    if not c_desc:
+        warnings.append(
+            f"摘要列が見つかりません（候補: {COL_ALIASES['description']}）\n"
+            f"    全列の値を結合してテキストとして使用します\n"
+            f"    列名を明示する場合: --col-desc '列名'"
+        )
+    if not c_amount:
+        warnings.append(
+            f"金額列が見つかりません（候補: {COL_ALIASES['amount']}）\n"
+            f"    収入・支出の判定が行えません\n"
+            f"    列名を明示する場合: --col-amount '列名'"
+        )
+
+    # ============================================================
+    # STEP 8: サンプル行の金額パース確認
+    # ============================================================
+    amount_parse_failures = []
+    sample_rows = list(csv.DictReader(io.StringIO(content), delimiter=delim))[:5]
+
+    for i, row in enumerate(sample_rows, 1):
+        if c_amount:
+            raw_val = row.get(c_amount, "")
+            parsed  = parse_amount(raw_val)
+            if raw_val and parsed == 0.0 and raw_val.strip() not in ("0", "", "０"):
+                amount_parse_failures.append(
+                    f"行{i}: 金額列の値 {repr(raw_val)} を数値に変換できませんでした"
+                )
+
+    if amount_parse_failures:
+        for msg in amount_parse_failures:
+            warnings.append(msg)
+
+    # ============================================================
+    # 警告表示
+    # ============================================================
+    if warnings:
+        print(f"\n  ⚠ 警告 ({len(warnings)}件):")
+        for i, w in enumerate(warnings, 1):
+            for line in w.splitlines():
+                prefix = f"    {i}. " if line == w.splitlines()[0] else "       "
+                print(f"{prefix}{line}")
+
+    print(f"\n{'='*60}")
+    print(f"  🔄 分類処理開始")
+    print(f"{'='*60}")
+
+    # ============================================================
+    # STEP 9: 分類処理
+    # ============================================================
+    clf  = AccountClassifier()
     rows = []
+    skipped_rows = []
 
-    with open(input_path, encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            # PRiMPO CSVフォーマット: date, description, amount, category
-            text      = row.get("description") or row.get("内容") or row.get("摘要") or ""
-            amount_str = row.get("amount") or row.get("金額") or "0"
-            try:
-                amount = float(str(amount_str).replace(",", "").replace("¥", "").replace("￥", ""))
-            except ValueError:
-                amount = 0.0
-            is_income = amount >= 0
+    for i, row in enumerate(csv.DictReader(io.StringIO(content), delimiter=delim), start=1):
+        # 摘要テキスト取得
+        text = (row.get(c_desc) or "").strip() if c_desc else ""
+        if not text:
+            text = " ".join(v for v in row.values() if v and v.strip())
 
-            result = clf.classify(text, amount=abs(amount), is_income=is_income)
+        # 金額取得
+        raw_amt = (row.get(c_amount) or "0") if c_amount else "0"
+        amount  = parse_amount(raw_amt)
 
-            rows.append({
-                **row,
-                "predicted_account": result["account"],
-                "confidence":        result["confidence"],
-                "method":            result["method"],
-                "alternatives":      "|".join(result["alternatives"]),
-                "needs_review":      "要確認" if result["needs_review"] else "OK",
-            })
+        # 空行スキップ
+        if not text and amount == 0:
+            skipped_rows.append((i, dict(row)))
+            continue
 
-    # 出力
+        is_income = amount >= 0
+        result    = clf.classify(text, amount=abs(amount), is_income=is_income)
+
+        rows.append({
+            **row,
+            "predicted_account": result["account"],
+            "confidence":        result["confidence"],
+            "method":            result["method"],
+            "alternatives":      "|".join(result["alternatives"]),
+            "needs_review":      "要確認" if result["needs_review"] else "OK",
+            "correct_account":   "",
+        })
+
+    # ============================================================
+    # STEP 10: 結果出力・サマリー
+    # ============================================================
+    print(f"\n  処理行数  : {len(rows) + len(skipped_rows)}行")
+    print(f"  分類成功  : {len(rows)}件")
+    print(f"  スキップ  : {len(skipped_rows)}件（空行・金額ゼロ）")
+
     if rows:
         with open(output_path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader()
             writer.writerows(rows)
 
-    print(f"[classify] {len(rows)}件を分類 → {output_path}")
-    needs_review = sum(1 for r in rows if r["needs_review"] == "要確認")
-    if needs_review:
-        print(f"  ⚠ 要確認: {needs_review}件（confidence < 0.5）")
+        need_review = sum(1 for r in rows if r["needs_review"] == "要確認")
+        by_account  = {}
+        for r in rows:
+            acc = r["predicted_account"]
+            by_account[acc] = by_account.get(acc, 0) + 1
+
+        print(f"\n  ✅ 分類完了 → {output_path}")
+        print(f"  要確認   : {need_review}件（信頼度 < 0.5）")
+
+        print(f"\n  科目別件数:")
+        for acc, cnt in sorted(by_account.items(), key=lambda x: -x[1]):
+            bar = "█" * min(cnt, 20)
+            print(f"    {acc:18s} {bar} {cnt}件")
+
+        print(f"\n  次のステップ:")
+        print(f"    1. {output_path} を開いて 'correct_account' 列に正解を入力")
+        print(f"    2. python classifier.py --learn {output_path}")
+        print(f"    3. python classifier.py --train")
+
+    else:
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー原因: 有効なデータ行が0件でした")
+        print(f"{'='*60}")
+
+        # スキップされた行の内容を表示して原因を絞り込む
+        if skipped_rows:
+            print(f"\n  スキップされた行（先頭3件）:")
+            for row_num, row_data in skipped_rows[:3]:
+                print(f"    行{row_num}: {dict(list(row_data.items())[:4])}")
+            print(f"\n  考えられる原因:")
+            print(f"    ① 摘要列と金額列の両方が空 → 列名が正しく認識されていない")
+            print(f"    ② 金額が文字列（'¥1,000' 等）でパース失敗")
+        else:
+            print(f"\n  考えられる原因:")
+            print(f"    ① ヘッダー行しかなく、データがない")
+            print(f"    ② 区切り文字が違うため1列として読まれている")
+
+        print(f"\n  ▶ 解決策（試す順番）:")
+        print(f"    Step1: 診断ツールで詳細を確認")
+        print(f"           python diagnose_csv.py {input_path}")
+        print(f"    Step2: 列名を明示して再実行")
+        print(f"           python classifier.py --classify {input_path} \\")
+        print(f"             --col-desc '{c_desc or '内容'}' \\")
+        print(f"             --col-amount '{c_amount or '金額'}' \\")
+        print(f"             --encoding {enc}")
+        print(f"    Step3: 区切り文字を明示")
+        print(f"           python classifier.py --classify {input_path} --delimiter ','")
+        print(f"    Step4: ファイルをUTF-8で保存し直す（Excelなら「CSV UTF-8」で保存）")
 
 
 def cmd_learn(corrected_path: str):
@@ -551,19 +903,31 @@ if __name__ == "__main__":
   繰り返すほど精度が向上します。
         """
     )
-    parser.add_argument("--classify",   metavar="INPUT_CSV",     help="CSVを分類する")
-    parser.add_argument("--output",     metavar="OUTPUT_CSV",     help="出力先CSVパス", default="output_classified.csv")
-    parser.add_argument("--learn",      metavar="CORRECTED_CSV",  help="修正済みCSVを学習データに追加")
-    parser.add_argument("--train",      action="store_true",       help="モデルを学習する")
-    parser.add_argument("--evaluate",   action="store_true",       help="モデルを評価する")
-    parser.add_argument("--stats",      action="store_true",       help="分類統計を表示")
+    parser.add_argument("--classify",   metavar="INPUT_CSV",    help="CSVを分類する")
+    parser.add_argument("--output",     metavar="OUTPUT_CSV",   help="出力先CSVパス", default="output_classified.csv")
+    parser.add_argument("--encoding",   metavar="ENCODING",     help="文字コード指定 (例: utf-8 / cp932 / shift-jis)", default="")
+    parser.add_argument("--delimiter",  metavar="DELIM",        help="区切り文字 (例: , またはタブ)", default="")
+    parser.add_argument("--col-date",   metavar="COL",          help="日付列名 (例: '日付')", default="")
+    parser.add_argument("--col-desc",   metavar="COL",          help="摘要列名 (例: '内容')", default="")
+    parser.add_argument("--col-amount", metavar="COL",          help="金額列名 (例: '金額')", default="")
+    parser.add_argument("--learn",      metavar="CORRECTED_CSV", help="修正済みCSVを学習データに追加")
+    parser.add_argument("--train",      action="store_true",    help="モデルを学習する")
+    parser.add_argument("--evaluate",   action="store_true",    help="モデルを評価する")
+    parser.add_argument("--stats",      action="store_true",    help="分類統計を表示")
     parser.add_argument("--add-rule",   nargs=2, metavar=("ACCOUNT", "KEYWORDS"),
                                         help="ルール追加: --add-rule 旅費交通費 'suica,icoca,バス'")
 
     args = parser.parse_args()
 
     if args.classify:
-        cmd_classify(args.classify, args.output)
+        cmd_classify(
+            args.classify, args.output,
+            encoding=args.encoding,
+            delimiter=args.delimiter,
+            col_date=args.col_date,
+            col_desc=args.col_desc,
+            col_amount=args.col_amount,
+        )
     elif args.learn:
         cmd_learn(args.learn)
     elif args.train:
