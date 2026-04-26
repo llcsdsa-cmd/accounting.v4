@@ -4,8 +4,8 @@ let taxSettings = JSON.parse(localStorage.getItem('kaikei_tax') || '{"method":"e
 let currentPage = 'dashboard';
 
 // ===== 初期化 =====
-document.addEventListener('DOMContentLoaded', () => {
-  handleOAuthCallback(); // OAuthリダイレクト処理
+document.addEventListener('DOMContentLoaded', async () => {
+  await handleOAuthCallback(); // Google Drive OAuth コールバック処理
   initIcons();
   initAccountSelects();
   initJournalMonth();

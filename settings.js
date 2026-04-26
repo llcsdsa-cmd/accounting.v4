@@ -51,11 +51,11 @@ function renderProviderCards() {
   if (!el) return;
 
   const providers = [
-    { id: 'local',    label: 'ローカル', icon: '📱', desc: 'このデバイスのみ保存（オフライン対応）', color: '#64748b' },
-    { id: 'gdrive',   label: 'Google Drive', icon: '🟡', desc: 'Googleアカウントで安全に同期', color: '#eab308' },
-    { id: 'dropbox',  label: 'Dropbox', icon: '🔵', desc: 'Dropboxフォルダへ自動保存', color: '#3b82f6' },
-    { id: 'onedrive', label: 'OneDrive', icon: '🔷', desc: 'Microsoftクラウドへ同期', color: '#6366f1' },
-    { id: 'webdav',   label: 'WebDAV', icon: '🌐', desc: 'Nextcloud等の自前サーバー', color: '#10b981' },
+    { id: 'local',    label: 'ローカル（このデバイス）', icon: '📱', desc: 'オフライン動作・設定不要', color: '#64748b' },
+    { id: 'gdrive',   label: 'Google Drive',            icon: '🟡', desc: 'Googleアカウントで安全に同期', color: '#eab308' },
+    { id: 'dropbox',  label: 'Dropbox',                 icon: '🔵', desc: 'Dropboxフォルダへ自動保存', color: '#3b82f6' },
+    { id: 'onedrive', label: 'OneDrive',                icon: '🔷', desc: 'Microsoftクラウドへ同期', color: '#6366f1' },
+    { id: 'webdav',   label: 'WebDAV',                  icon: '🌐', desc: 'Nextcloud等の自前サーバー', color: '#10b981' },
   ];
 
   el.innerHTML = providers.map(p => {
@@ -95,15 +95,86 @@ function renderProviderCards() {
 }
 
 function renderProviderConfig(id, cfg) {
-  if (id === 'gdrive') return `
+  if (id === 'gdrive') {
+    const token = loadGDriveToken();
+    const connectedEmail = token ? '接続済み' : '';
+    const tokenExpiry = token
+      ? (new Date(token.expiresAt) > new Date()
+          ? `トークン有効期限: ${new Date(token.expiresAt).toLocaleString('ja-JP')}`
+          : '⚠ トークン期限切れ（次回保存時に自動更新）')
+      : '';
+
+    return `
     <div class="provider-config">
-      <input class="prov-input" type="text" placeholder="Client ID（Google Cloud Console）"
-        value="${cfg.clientId || ''}" oninput="storageSettings.gdrive.clientId=this.value;saveStorageSettings()">
-      <div class="prov-error" id="settings-error-gdrive"></div>
-      ${cfg.connected
-        ? `<button class="prov-btn prov-disconnect-btn" onclick="disconnectProvider('gdrive')">切断</button>`
-        : `<button class="prov-btn prov-connect-btn" onclick="connectGDrive()">🟡 Google でログイン</button>`}
+      ${cfg.connected ? `
+        <div class="gdrive-connected-info">
+          <div class="connected-row">
+            <span class="connected-check">✓</span>
+            <span class="connected-label">Google Drive に接続中</span>
+          </div>
+          ${storageSettings.gdrive.folderName
+            ? `<div class="connected-detail">保存先フォルダ: 📁 ${storageSettings.gdrive.folderName}</div>`
+            : ''}
+          ${tokenExpiry ? `<div class="connected-detail">${tokenExpiry}</div>` : ''}
+          <div class="provider-actions" style="margin-top:8px">
+            <button class="prov-btn prov-connect-btn" onclick="testAndShowGDriveStatus()">接続テスト</button>
+            <button class="prov-btn prov-disconnect-btn" onclick="disconnectGDrive()">切断</button>
+          </div>
+        </div>
+      ` : `
+        <div class="gdrive-setup-guide">
+          <div class="guide-step">
+            <div class="guide-step-num">1</div>
+            <div class="guide-step-body">
+              <div class="guide-step-title">Google Cloud Consoleでプロジェクト作成</div>
+              <a class="guide-link" href="https://console.cloud.google.com/" target="_blank">
+                console.cloud.google.com を開く →
+              </a>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-step-num">2</div>
+            <div class="guide-step-body">
+              <div class="guide-step-title">Google Drive API を有効化</div>
+              <div class="guide-step-sub">APIとサービス → ライブラリ → "Google Drive API"</div>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-step-num">3</div>
+            <div class="guide-step-body">
+              <div class="guide-step-title">OAuth クライアントID を作成</div>
+              <div class="guide-step-sub">認証情報 → OAuthクライアントID → ウェブアプリケーション</div>
+              <div class="guide-step-sub">リダイレクトURI: <code class="uri-code">${location.origin + location.pathname}</code></div>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="guide-step-num">4</div>
+            <div class="guide-step-body">
+              <div class="guide-step-title">クライアントID・シークレットを入力</div>
+            </div>
+          </div>
+        </div>
+        <div class="prov-input-group">
+          <label class="prov-input-label">クライアントID</label>
+          <input class="prov-input" type="text"
+            placeholder="例: 123456789-abc...apps.googleusercontent.com"
+            value="${cfg.clientId || ''}"
+            oninput="storageSettings.gdrive.clientId=this.value;saveStorageSettings()">
+        </div>
+        <div class="prov-input-group">
+          <label class="prov-input-label">クライアントシークレット</label>
+          <input class="prov-input" type="password"
+            placeholder="例: GOCSPX-..."
+            value="${cfg.clientSecret || ''}"
+            oninput="storageSettings.gdrive.clientSecret=this.value;saveStorageSettings()">
+        </div>
+        <div class="prov-error" id="settings-error-gdrive" style="display:none"></div>
+        <button class="prov-btn prov-connect-btn" onclick="connectGDrive()">
+          🟡 Google アカウントでログイン
+        </button>
+      `}
     </div>`;
+  }
 
   if (id === 'dropbox') return `
     <div class="provider-config">
@@ -274,6 +345,18 @@ function saveImportMapping() {
   };
   localStorage.setItem('kaikei_import_mapping', JSON.stringify(mapping));
   showToast('インポート設定を保存しました', 'success');
+}
+
+// ===== Google Drive 接続テスト表示 =====
+async function testAndShowGDriveStatus() {
+  showToast('接続テスト中...', 'info');
+  const result = await testGDriveConnection();
+  if (result.ok) {
+    showToast(`接続OK: ${result.email || 'Google Drive'}`, 'success');
+  } else {
+    showToast(`接続失敗: ${result.error}`, 'error');
+    showGDriveError(result.error);
+  }
 }
 
 // ===== プロバイダ操作 =====

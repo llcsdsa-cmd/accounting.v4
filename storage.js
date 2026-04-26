@@ -11,7 +11,7 @@ const DEFAULT_STORAGE_SETTINGS = {
   autoBackup:     true,
   backupInterval: 'daily',
   lastBackup:     null,
-  gdrive:   { connected: false, token: '', clientId: '', folderId: '', folderName: '' },
+  gdrive:   { connected: false, clientId: '', clientSecret: '', folderId: '', folderName: '' },
   dropbox:  { connected: false, token: '', appKey: '',  path: '/青色会計' },
   onedrive: { connected: false, token: '', clientId: '', folderId: '' },
   webdav:   { connected: false, url: '',  username: '', password: '' },
@@ -238,15 +238,21 @@ async function testWebDAV() {
   }
 }
 
-// ===== OAuth コールバック =====
-function handleOAuthCallback() {
+// ===== OAuth コールバック（起動時に呼ぶ）=====
+async function handleOAuthCallback() {
+  // Google Drive: Authorization Code Flow (?code=...)
+  if (location.search.includes('code=') && location.search.includes('state=')) {
+    await handleGDriveCallback();
+    return;
+  }
+  // その他プロバイダ: Implicit Flow (#access_token=...)
   if (!location.hash.includes('access_token=')) return;
-  const params = new URLSearchParams(location.hash.replace('#', ''));
-  const token  = params.get('access_token');
+  const params   = new URLSearchParams(location.hash.replace('#', ''));
+  const token    = params.get('access_token');
   if (!token) return;
   let provider = '';
   try { provider = JSON.parse(atob(params.get('state') || '')).provider; } catch {}
-  if (!provider) return;
+  if (!provider || provider === 'gdrive') return;
   storageSettings[provider] = storageSettings[provider] || {};
   storageSettings[provider].token     = token;
   storageSettings[provider].connected = true;
