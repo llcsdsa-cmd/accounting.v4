@@ -439,6 +439,7 @@ def cmd_classify(
     col_date: str = "",
     col_desc: str = "",
     col_amount: str = "",
+    skip_rows: int = 0,
 ):
     """CSVを分類してoutput.csvに出力する（詳細エラー診断付き）"""
 
@@ -566,8 +567,52 @@ def cmd_classify(
         print(f"    [{i}] {repr(display)}")
 
     # ============================================================
-    # STEP 5: 区切り文字判定
+    # STEP 4b: 空行・ゴミ行を自動スキップして実質ヘッダーを探す
     # ============================================================
+    # skip_rows 手動指定があればそれを使う
+    # なければ「全列が空」か「カンマだけ」の行を自動スキップ
+    auto_skip = skip_rows
+    if auto_skip == 0:
+        for li, line in enumerate(data_lines):
+            stripped = line.replace(delimiter or ',', '').strip()
+            if stripped == '':
+                auto_skip = li + 1  # この行まではスキップ
+            else:
+                break
+
+    if auto_skip > 0:
+        warnings.append(
+            f"先頭 {auto_skip} 行が空行（またはカンマのみ）のためスキップします\n"
+            f"    スキップされた行: {[repr(l) for l in data_lines[:auto_skip]]}"
+        )
+        # スキップ後の内容で content を再構築
+        content = "\n".join(data_lines[auto_skip:])
+        data_lines = data_lines[auto_skip:]
+
+    # ============================================================
+    # STEP 4c: 先頭に余分なカンマ（空列）がないか検出・除去
+    # ============================================================
+    if data_lines:
+        first = data_lines[0]
+        delim_char = delimiter or detect_delimiter(first)
+        cols_in_header = first.split(delim_char)
+        leading_empty  = sum(1 for c in cols_in_header if c.strip() == '')
+        # 全列が空でない場合で先頭だけ空なら除去
+        nonempty_cols = [c for c in cols_in_header if c.strip()]
+        if cols_in_header[0].strip() == '' and nonempty_cols:
+            warnings.append(
+                f"ヘッダー行の先頭に空列が {leading_empty} 個あります → 自動除去します\n"
+                f"    元ヘッダー: {repr(first[:80])}"
+            )
+            # 全行の先頭空列を除去
+            new_lines = []
+            for line in data_lines:
+                parts = line.split(delim_char)
+                # 先頭の空列を除去（ヘッダーの空列数分）
+                trimmed = parts[leading_empty:]
+                new_lines.append(delim_char.join(trimmed))
+            content   = "\n".join(new_lines)
+            data_lines = new_lines
     delim = delimiter or detect_delimiter(data_lines[0])
     delim_counts = {',': data_lines[0].count(','), '\t': data_lines[0].count('\t')}
 
@@ -907,6 +952,7 @@ if __name__ == "__main__":
     parser.add_argument("--output",     metavar="OUTPUT_CSV",   help="出力先CSVパス", default="output_classified.csv")
     parser.add_argument("--encoding",   metavar="ENCODING",     help="文字コード指定 (例: utf-8 / cp932 / shift-jis)", default="")
     parser.add_argument("--delimiter",  metavar="DELIM",        help="区切り文字 (例: , またはタブ)", default="")
+    parser.add_argument("--skip-rows",  metavar="N",            help="先頭N行をスキップ（空行がある場合）", type=int, default=0)
     parser.add_argument("--col-date",   metavar="COL",          help="日付列名 (例: '日付')", default="")
     parser.add_argument("--col-desc",   metavar="COL",          help="摘要列名 (例: '内容')", default="")
     parser.add_argument("--col-amount", metavar="COL",          help="金額列名 (例: '金額')", default="")
@@ -927,6 +973,7 @@ if __name__ == "__main__":
             col_date=args.col_date,
             col_desc=args.col_desc,
             col_amount=args.col_amount,
+            skip_rows=args.skip_rows,
         )
     elif args.learn:
         cmd_learn(args.learn)
