@@ -1,24 +1,5 @@
 """
-classifier.py — 勘定科目自動分類エンジン
-
-学習フロー:
-  1. 初回: キーワードルールで分類（ベースライン）
-  2. ユーザーが正解ラベルを付与 → training_data.csv に蓄積
-  3. --train で機械学習モデルを再学習
-  4. 次回から ML モデル優先で分類（精度向上）
-
-使い方:
-  # CSVを分類（結果をoutput.csvに出力）
-  python classifier.py --classify input.csv
-
-  # 正解ラベルを学習データに追加
-  python classifier.py --learn output.csv
-
-  # モデルを再学習
-  python classifier.py --train
-
-  # 分類精度を評価
-  python classifier.py --evaluate
+classifier.py — 勘定科目自動分類エンジン（軽貨物ドライバー特化版）
 """
 
 import argparse
@@ -41,7 +22,7 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.metrics import classification_report
 import pandas as pd
 
-# ローカルモジュール
+# ローカルモジュール（tokenizer.py）
 from tokenizer import tokenize, tokens_to_string, extract_features
 
 # ===== パス設定 =====
@@ -66,51 +47,38 @@ ACCOUNTS = [
 ]
 
 # ===== キーワードルール（軽貨物ドライバー特化版） =====
-# rules.json が存在する場合はそちらを優先（ユーザー編集可能）
 DEFAULT_RULES = {
     "燃料費": [
-        # 油種・数量
         "レギュラー", "ハイオク", "軽油", "ガソリン", "燃料", "油", "＠", "単価", "数量", "リットル", " L ",
-        # ガソリンスタンド（大手・系列）
         "出光", "エネオス", "eneos", "アポロ", "apollo", "コスモ", "cosmo", "キグナス", "kygnus", "宇佐美",
         "usami", "シェル", "shell", "solar", "太陽石油", "jass", "ja-ss", "ホクレン", "三菱商事エネルギー",
-        # 会員カード・決済
         "フリート", "掛け売り", "apollostation", "earthe",
     ],
     "車両費": [
-        # メンテナンス・清掃
         "洗車", "シャンプー", "コーティング", "ワックス", "車内清掃", "掃除機", "撥水", "ふき取り",
         "ワイパー", "オイル", "エレメント", "フィルター", "タイヤ", "スタッドレス", "ホイール", "バルブ",
         "ウォッシャー", "バッテリー", "プラグ", "ブレーキ", "パッド", "クーラント", "不凍液", "エアコンガス",
         "アドブルー", "adblue", "尿素", "工賃", "技術料", "点検", "車検", "法定", "整備",
-        # カー用品店・ディーラー
         "イエローハット", "yellow", "オートバックス", "autobacs", "ジェームス", "jms", "アップガレージ",
         "トヨタ", "日産", "ホンダ", "ダイハツ", "スズキ", "三菱", "マツダ", "スバル",
     ],
     "旅費交通費": [
-        # 有料道路・パーキング
         "高速道路", "nexco", "ネクスコ", "首都高", "阪神高速", "有料", "etc", "領収書（etc）", "料金所",
         "タイムズ", "times", "リパーク", "三井のリパーク", "パーキング", "駐車場", "コインパ", "駐輪",
-        # 電車・その他
         "suica", "icoca", "pasmo", "電車", "バス", "タクシー", "jr", "新幹線", "駅", "乗車",
     ],
     "荷造運賃": [
-        # 配達用備品（消耗品費と迷う場合は、配送に直結するものをこちらに）
         "台車", "キャリー", "カート", "テープ", "養生", "ガムテープ", "布テープ", "opｐ", "ロープ",
         "ストレッチフィルム", "梱包", "ラップ", "ダンボール", "緩衝材", "プチプチ", "ラッシング",
         "荷締め", "ベルト", "パレット", "伝票", "送り状", "封筒", "レターパック", "切手",
     ],
     "消耗品費": [
-        # スマホ周辺（配達の生命線）
         "ホルダー", "充電器", "ケーブル", "シガーソケット", "usb", "マグネット", "イヤホン",
         "bluetooth", "ワイヤレス", "ヘッドセット", "モバイルバッテリー", "アンカー", "anker",
-        # 衣服（安全・防寒）
         "軍手", "グローブ", "手袋", "安全靴", "レインウェア", "カッパ", "防寒", "ワークマン", "workman",
-        # その他事務・消耗品
         "文房具", "コクヨ", "プリンタ", "インク", "トナー", "コピー用紙", "ボールペン", "ファイル", "電池",
     ],
     "通信費": [
-        # スマホ・格安SIM・ネット
         "ドコモ", "docomo", "au", "kddi", "ソフトバンク", "softbank", "ワイモバイル", "uq", "楽天モバイル",
         "格安sim", "携帯", "スマホ", "wifi", "インターネット", "光回線", "プロバイダ", "ntt", "通信", "ギガ",
     ],
@@ -118,19 +86,15 @@ DEFAULT_RULES = {
         "名刺", "チラシ", "看板", "マグネットシート", "ステッカー", "pr", "ホームページ",
     ],
     "損害保険料": [
-        # 車両保険（自賠責は租税公課にする場合もありますが、任意保険等はこちら）
         "保険", "共済", "損保", "東京海上", "損保ジャパン", "三井住友海上", "あいおい", "アクサ",
     ],
     "修繕費": [
-        # 車両のキズやヘコミの修理
         "修理", "修繕", "補修", "板金", "塗装", "デント", "ガラス交換", "リペア",
     ],
     "租税公課": [
-        # 税金・公的な費用
         "重量税", "自動車税", "軽自動車税", "税金", "住民税", "固定資産税", "印紙", "収入印紙",
     ],
     "地代家賃": [
-        # 事務所や月極駐車場
         "家賃", "賃料", "マンション", "アパート", "テナント", "地代", "月極駐車場", "保管場所",
     ],
     "売上高": [
@@ -145,9 +109,7 @@ DEFAULT_RULES = {
 }
 
 
-
 def load_rules() -> dict:
-    """rules.json を読み込む（なければデフォルトを使用）"""
     if RULES_PATH.exists():
         with open(RULES_PATH, encoding="utf-8") as f:
             return json.load(f)
@@ -161,10 +123,6 @@ def save_rules(rules: dict):
 
 
 def classify_by_rules(text: str, rules: dict) -> tuple[str, float]:
-    """
-    キーワードルールで分類する
-    戻り値: (勘定科目, 信頼スコア 0.0-1.0)
-    """
     text_n = unicodedata.normalize("NFKC", text).lower()
     best_account = "消耗品費"
     best_score   = 0.0
@@ -181,7 +139,6 @@ def classify_by_rules(text: str, rules: dict) -> tuple[str, float]:
 
 
 def load_model():
-    """保存済みモデルをロードする"""
     if MODEL_PATH.exists():
         with open(MODEL_PATH, "rb") as f:
             return pickle.load(f)
@@ -189,18 +146,13 @@ def load_model():
 
 
 def train_model(df: pd.DataFrame) -> Pipeline:
-    """
-    学習データから TF-IDF + LinearSVC モデルを学習する
-    df 列: [text, account]
-    """
-    # テキストをトークン化
     X = df["text"].apply(lambda t: tokens_to_string(tokenize(str(t))))
     y = df["account"]
 
     pipeline = Pipeline([
         ("tfidf", TfidfVectorizer(
             analyzer="word",
-            ngram_range=(1, 2),   # ユニグラム＋バイグラム
+            ngram_range=(1, 2),
             min_df=1,
             max_features=5000,
             sublinear_tf=True,
@@ -208,7 +160,7 @@ def train_model(df: pd.DataFrame) -> Pipeline:
         ("clf", LinearSVC(
             C=1.0,
             max_iter=2000,
-            class_weight="balanced",  # クラス不均衡を補正
+            class_weight="balanced",
         )),
     ])
     pipeline.fit(X, y)
@@ -216,18 +168,12 @@ def train_model(df: pd.DataFrame) -> Pipeline:
 
 
 def classify_by_model(text: str, model: Pipeline) -> tuple[str, float]:
-    """
-    MLモデルで分類する
-    LinearSVC は確率を返さないため decision_function でスコアを計算
-    """
     token_str = tokens_to_string(tokenize(text))
-    pred = model.predict([token_str])[0]
-    # decision_function でクラス信頼度を取得
+    pred = model.predict([token_str])
     try:
-        scores = model.decision_function([token_str])[0]
+        scores = model.decision_function([token_str])
         classes = model.classes_
         idx = list(classes).index(pred)
-        # ソフトマックス的なスコア正規化
         exp_scores = [2 ** s for s in scores]
         confidence = exp_scores[idx] / sum(exp_scores)
     except Exception:
@@ -236,16 +182,6 @@ def classify_by_model(text: str, model: Pipeline) -> tuple[str, float]:
 
 
 class AccountClassifier:
-    """
-    勘定科目分類エンジン
-
-    優先順位:
-      1. MLモデル（信頼スコア 0.7 以上）
-      2. キーワードルール
-      3. MLモデル（スコアに関わらず）
-      4. デフォルト（消耗品費）
-    """
-
     def __init__(self):
         self.rules = load_rules()
         self.model = load_model()
@@ -262,18 +198,6 @@ class AccountClassifier:
             json.dump(self.history, f, ensure_ascii=False, indent=2)
 
     def classify(self, text: str, amount: float = 0.0, is_income: bool = False) -> dict:
-        """
-        テキストと金額から最適な勘定科目を返す
-
-        Returns:
-            {
-                account     : str    — 予測勘定科目
-                confidence  : float  — 信頼スコア（0.0-1.0）
-                method      : str    — 分類手法
-                alternatives: list   — 次候補リスト
-                needs_review: bool   — 確認が必要かどうか
-            }
-        """
         # 収入は先に判定
         if is_income:
             return {
@@ -289,14 +213,12 @@ class AccountClassifier:
         rule_account  = None
         rule_confidence = 0.0
 
-        # MLモデル分類
         if self.model:
             ml_account, ml_confidence = classify_by_model(text, self.model)
 
-        # キーワードルール分類
         rule_account, rule_confidence = classify_by_rules(text, self.rules)
 
-        # 判定ロジック（キーワードルールを最優先に引き上げ）
+        # 【判定ロジック】キーワードルールを最優先
         if rule_confidence > 0:
             account    = rule_account
             confidence = rule_confidence
@@ -314,10 +236,7 @@ class AccountClassifier:
             confidence = 0.1
             method     = "default"
 
-        # 次候補（account 以外の上位）
         alternatives = self._get_alternatives(text, account)
-
-        # 信頼スコアが低い場合はレビュー要求
         needs_review = confidence < 0.5
 
         result = {
@@ -328,7 +247,6 @@ class AccountClassifier:
             "needs_review": needs_review,
         }
 
-        # 分類履歴に記録
         self.history.append({
             "text":       text,
             "amount":     amount,
@@ -337,26 +255,24 @@ class AccountClassifier:
             "confidence": confidence,
             "method":     method,
             "timestamp":  datetime.now().isoformat(),
-            "corrected":  None,  # ユーザー修正後に埋まる
+            "corrected":  None,
         })
         self._save_history()
 
         return result
 
     def _get_alternatives(self, text: str, predicted: str) -> list[str]:
-        """予測以外の上位候補を返す"""
         candidates = []
         if self.model:
             token_str = tokens_to_string(tokenize(text))
             try:
-                scores  = self.model.decision_function([token_str])[0]
+                scores  = self.model.decision_function([token_str])
                 classes = self.model.classes_
-                ranked  = sorted(zip(classes, scores), key=lambda x: -x[1])
+                ranked  = sorted(zip(classes, scores), key=lambda x: -x)
                 candidates = [c for c, _ in ranked if c != predicted][:3]
             except Exception:
                 pass
         if not candidates:
-            # ルールから上位科目を選ぶ
             scores = {}
             text_n = unicodedata.normalize("NFKC", text).lower()
             for acc, kws in self.rules.items():
@@ -369,17 +285,12 @@ class AccountClassifier:
         return candidates or ["消耗品費", "雑費"]
 
     def add_correction(self, text: str, correct_account: str):
-        """
-        ユーザーが修正した正解ラベルを学習データに追加する
-        """
-        # 最新の履歴エントリを修正
         for entry in reversed(self.history):
             if entry["text"] == text and entry["corrected"] is None:
                 entry["corrected"] = correct_account
                 break
         self._save_history()
 
-        # training_data.csv に追記
         row = {"text": text, "account": correct_account}
         file_exists = TRAIN_DATA.exists()
         with open(TRAIN_DATA, "a", newline="", encoding="utf-8") as f:
@@ -387,21 +298,18 @@ class AccountClassifier:
             if not file_exists:
                 writer.writeheader()
             writer.writerow(row)
-
         print(f"[learn] 学習データ追加: '{text}' → {correct_account}")
 
 
 # ===== CLI インターフェース =====
 
 def detect_encoding(filepath: str) -> str:
-    """文字コードを自動検出する（BOM優先 → Shift-JIS試行 → UTF-8）"""
     with open(filepath, "rb") as f:
         raw = f.read(4096)
     if raw.startswith(b'\xef\xbb\xbf'):
         return 'utf-8-sig'
     if raw.startswith(b'\xff\xfe'):
         return 'utf-16'
-    # Shift-JIS / CP932 試行
     for enc in ('cp932', 'shift-jis'):
         try:
             raw.decode(enc)
@@ -412,33 +320,25 @@ def detect_encoding(filepath: str) -> str:
 
 
 def detect_delimiter(first_line: str) -> str:
-    """先頭行から区切り文字を推定する"""
     counts = {',': first_line.count(','), '\t': first_line.count('\t')}
     return max(counts, key=counts.get)
 
 
-# 列名の候補（どれかに一致すれば採用）
+# 列名のエイリアス候補
 COL_ALIASES = {
-    "date":        ["date", "日付", "取引日", "年月日", "Date"],
-    "description": ["description", "内容", "摘要", "件名", "Description",
-                    "取引内容", "備考", "明細", "name", "Name"],
-    "amount":      ["amount", "金額", "取引金額", "Amount", "金額(税込)",
-                    "入出金額", "出金額", "入金額", "価格"],
+    "date":        ["date", "日付", "取引日", "年月日", "Date", "支払日"],
+    "description": ["description", "内容", "摘要", "件名", "Description", "取引内容", "備考", "明細", "name", "Name", "品名", "店舗名"],
+    "amount":      ["amount", "金額", "取引金額", "Amount", "金額(税込)", "入出金額", "出金額", "入金額", "価格", "支払金額", "合計金額"],
+    "type":        ["type", "区分", "収支", "収支区分", "出入", "入出"],
 }
 
 
 def resolve_column(fieldnames: list[str], col_key: str, override: str = "") -> str:
-    """
-    列名を解決する
-    override が指定された場合はそれを使用。
-    なければ COL_ALIASES でファジーマッチ。
-    """
     if override and override in fieldnames:
         return override
     for alias in COL_ALIASES.get(col_key, []):
         if alias in fieldnames:
             return alias
-    # 部分一致フォールバック
     col_lower = col_key.lower()
     for f in fieldnames:
         if col_lower in f.lower():
@@ -447,11 +347,9 @@ def resolve_column(fieldnames: list[str], col_key: str, override: str = "") -> s
 
 
 def parse_amount(val: str) -> float:
-    """金額文字列を数値に変換（¥・カンマ・全角数字に対応）"""
     import unicodedata
     val = unicodedata.normalize("NFKC", str(val))
     val = val.replace(",", "").replace("¥", "").replace("￥", "").strip()
-    # 括弧は負の金額を表すことがある (1,000) → -1000
     if val.startswith("(") and val.endswith(")"):
         val = "-" + val[1:-1]
     try:
@@ -468,295 +366,106 @@ def cmd_classify(
     col_date: str = "",
     col_desc: str = "",
     col_amount: str = "",
-    skip_rows: int = 0,
+    col_type: str = "",          # ★追加引数
+    skip_rows: int = 0,          # ★手動スキップ
+    default_type: str = "",      # ★追加引数
 ):
-    """CSVを分類してoutput.csvに出力する（詳細エラー診断付き）"""
-
-    errors   = []   # 致命的エラー（処理続行不可）
-    warnings = []   # 警告（処理は続行）
-
-    # ============================================================
-    # STEP 1: ファイルの存在・サイズ確認
-    # ============================================================
-    from pathlib import Path
     p = Path(input_path)
 
     if not p.exists():
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー: ファイルが見つかりません")
-        print(f"{'='*60}")
-        print(f"  パス : {input_path}")
-        print(f"  確認 : ファイル名・パスにタイポがないか確認してください")
-        print(f"  現在のディレクトリ: {Path.cwd()}")
-        print(f"  このフォルダにあるCSV: {list(Path.cwd().glob('*.csv'))}")
+        print(f"\n{'='*60}\n  ❌ エラー: ファイルが見つかりません\n{'='*60}")
         return
 
     size = p.stat().st_size
     if size == 0:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー: ファイルが空です（0 bytes）")
-        print(f"{'='*60}")
-        print(f"  パス : {input_path}")
-        print(f"  確認 : PRiMPOで正しくエクスポートできているか確認してください")
+        print(f"\n{'='*60}\n  ❌ エラー: ファイルが空です（0 bytes）\n{'='*60}")
         return
 
-    print(f"\n{'='*60}")
-    print(f"  📂 CSV読み込み診断レポート")
-    print(f"{'='*60}")
-    print(f"  ファイル: {input_path}")
-    print(f"  サイズ  : {size:,} bytes")
+    print(f"\n{'='*60}\n  📂 CSV読み込み診断レポート\n{'='*60}\n  ファイル: {input_path}\n  サイズ  : {size:,} bytes")
 
-    # ============================================================
-    # STEP 2: 生バイト確認（BOM・文字化け検出）
-    # ============================================================
     with open(input_path, "rb") as f:
         raw = f.read(min(size, 4096))
 
-    bom_detected = ""
-    if raw.startswith(b'\xef\xbb\xbf'):
-        bom_detected = "UTF-8 BOM"
-    elif raw.startswith(b'\xff\xfe'):
-        bom_detected = "UTF-16 LE BOM"
-    elif raw.startswith(b'\xfe\xff'):
-        bom_detected = "UTF-16 BE BOM"
-
-    null_bytes = raw.count(b'\x00')
-    if null_bytes > 10:
-        warnings.append(f"NULLバイトが {null_bytes}個 検出 → UTF-16の可能性（--encoding utf-16 を試してください）")
-
-    # ============================================================
-    # STEP 3: 文字コード判定
-    # ============================================================
     enc = encoding or detect_encoding(input_path)
-    if bom_detected:
-        print(f"  BOM    : {bom_detected} 検出")
-    print(f"  文字コード: {enc}{'（自動検出）' if not encoding else '（指定）'}")
-
-    # 実際にデコードを試みる
     content = None
     tried_encodings = [enc] if encoding else [enc, 'utf-8', 'utf-8-sig', 'cp932', 'shift-jis', 'utf-16']
-    decode_errors = {}
 
     for try_enc in tried_encodings:
         try:
             with open(input_path, encoding=try_enc, errors='strict') as f:
                 content = f.read()
-            enc = try_enc  # 成功したエンコードを確定
-            print(f"  デコード: ✅ {enc} で成功")
+            enc = try_enc
             break
-        except UnicodeDecodeError as e:
-            decode_errors[try_enc] = f"行{e.lineno if hasattr(e,'lineno') else '?'} 付近: {e.reason}"
-        except Exception as e:
-            decode_errors[try_enc] = str(e)
+        except Exception:
+            pass
 
     if content is None:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー原因: 文字コードのデコード失敗")
-        print(f"{'='*60}")
-        print(f"\n  試したエンコードと失敗理由:")
-        for enc_tried, reason in decode_errors.items():
-            print(f"    {enc_tried:12s} → {reason}")
-        print(f"\n  先頭バイト（hex）: {raw[:32].hex()}")
-        print(f"\n  ▶ 解決策:")
-        print(f"    1. テキストエディタ（メモ帳・VSCode）でファイルを開き、")
-        print(f"       「名前をつけて保存」→ 文字コード「UTF-8」で保存し直す")
-        print(f"    2. または文字コードを明示して再実行:")
-        print(f"       python classifier.py --classify {input_path} --encoding utf-16")
-        print(f"       python classifier.py --classify {input_path} --encoding shift-jis")
+        print(f"\n{'='*60}\n  ❌ エラー原因: 文字コードのデコード失敗\n{'='*60}")
         return
 
-    # ============================================================
-    # STEP 4: 行数・内容確認
-    # ============================================================
     all_lines  = content.splitlines()
     data_lines = [l for l in all_lines if l.strip()]
 
-    print(f"  総行数  : {len(all_lines)}行 （空行除く: {len(data_lines)}行）")
-
-    if len(data_lines) == 0:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー原因: ファイルに内容がありません")
-        print(f"{'='*60}")
-        print(f"  先頭バイト: {raw[:64].hex()}")
-        print(f"  ▶ 解決策: PRiMPOで再度エクスポートしてください")
-        return
-
-    if len(data_lines) == 1:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー原因: ヘッダー行のみでデータ行がありません")
-        print(f"{'='*60}")
-        print(f"  ヘッダー: {repr(data_lines[0])}")
-        print(f"  ▶ 解決策: PRiMPOのエクスポート設定でデータ期間が正しく選択されているか確認してください")
-        return
-
-    # 先頭数行を表示
-    print(f"\n  先頭3行（生テキスト）:")
-    for i, line in enumerate(data_lines[:3]):
-        display = line if len(line) <= 80 else line[:80] + "..."
-        print(f"    [{i}] {repr(display)}")
-
-    # ============================================================
-    # STEP 4b: 空行・ゴミ行を自動スキップして実質ヘッダーを探す
-    # ============================================================
-    # skip_rows 手動指定があればそれを使う
-    # なければ「全列が空」か「カンマだけ」の行を自動スキップ
+    # skip_rows 手動指定、または自動ゴミ行スキップ
     auto_skip = skip_rows
     if auto_skip == 0:
         for li, line in enumerate(data_lines):
             stripped = line.replace(delimiter or ',', '').strip()
-            if stripped == '':
-                auto_skip = li + 1  # この行まではスキップ
-            else:
-                break
+            if stripped == '': auto_skip = li + 1
+            else: break
 
     if auto_skip > 0:
-        warnings.append(
-            f"先頭 {auto_skip} 行が空行（またはカンマのみ）のためスキップします\n"
-            f"    スキップされた行: {[repr(l) for l in data_lines[:auto_skip]]}"
-        )
-        # スキップ後の内容で content を再構築
         content = "\n".join(data_lines[auto_skip:])
         data_lines = data_lines[auto_skip:]
 
-    # ============================================================
-    # STEP 4c: 先頭に余分なカンマ（空列）がないか検出・除去
-    # ============================================================
-    if data_lines:
-        first = data_lines[0]
-        delim_char = delimiter or detect_delimiter(first)
-        cols_in_header = first.split(delim_char)
-        leading_empty  = sum(1 for c in cols_in_header if c.strip() == '')
-        # 全列が空でない場合で先頭だけ空なら除去
-        nonempty_cols = [c for c in cols_in_header if c.strip()]
-        if cols_in_header[0].strip() == '' and nonempty_cols:
-            warnings.append(
-                f"ヘッダー行の先頭に空列が {leading_empty} 個あります → 自動除去します\n"
-                f"    元ヘッダー: {repr(first[:80])}"
-            )
-            # 全行の先頭空列を除去
-            new_lines = []
-            for line in data_lines:
-                parts = line.split(delim_char)
-                # 先頭の空列を除去（ヘッダーの空列数分）
-                trimmed = parts[leading_empty:]
-                new_lines.append(delim_char.join(trimmed))
-            content   = "\n".join(new_lines)
-            data_lines = new_lines
-    delim = delimiter or detect_delimiter(data_lines[0])
-    delim_counts = {',': data_lines[0].count(','), '\t': data_lines[0].count('\t')}
-
-    if max(delim_counts.values()) == 0:
-        warnings.append(
-            f"カンマもタブも見つかりません（カンマ:{delim_counts[',']} タブ:{delim_counts[chr(9)]}）"
-            f" → ファイルが1列のみか、区切り文字が特殊な可能性があります"
-        )
-
-    delim_name = {',': 'カンマ(,)', '\t': 'タブ(\\t)'}.get(delim, repr(delim))
-    print(f"\n  区切り文字: {delim_name}{'（指定）' if delimiter else '（自動検出）'}")
-
-    # ============================================================
-    # STEP 6: CSV列名解析
-    # ============================================================
+    delim = delimiter or detect_delimiter(data_lines)
+    
     import io
     reader    = csv.DictReader(io.StringIO(content), delimiter=delim)
     fieldnames = reader.fieldnames or []
 
     if not fieldnames:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー原因: ヘッダー行の解析に失敗しました")
-        print(f"{'='*60}")
-        print(f"  先頭行  : {repr(data_lines[0])}")
-        print(f"  区切り  : {delim_name}")
-        print(f"\n  ▶ 解決策:")
-        print(f"    区切り文字を明示してください:")
-        print(f"    python classifier.py --classify {input_path} --delimiter ','")
-        print(f"    python classifier.py --classify {input_path} --delimiter $'\\t'  # タブの場合")
+        print(f"\n{'='*60}\n  ❌ エラー原因: ヘッダー行の解析に失敗しました\n{'='*60}")
         return
 
-    print(f"  検出した列: {fieldnames}")
-
-    # ============================================================
-    # STEP 7: 必須列の解決
-    # ============================================================
     c_date   = resolve_column(fieldnames, "date",        col_date)
     c_desc   = resolve_column(fieldnames, "description", col_desc)
     c_amount = resolve_column(fieldnames, "amount",      col_amount)
+    c_type   = resolve_column(fieldnames, "type",        col_type)
 
-    print(f"\n  列マッピング:")
-    print(f"    日付列  : {repr(c_date)  or '❌ 未検出（なくても動作します）'}")
-    print(f"    摘要列  : {repr(c_desc)  or '⚠ 未検出 → 全列を結合してテキスト化します'}")
-    print(f"    金額列  : {repr(c_amount) or '⚠ 未検出 → 全件 支出として扱います'}")
-
-    if not c_desc:
-        warnings.append(
-            f"摘要列が見つかりません（候補: {COL_ALIASES['description']}）\n"
-            f"    全列の値を結合してテキストとして使用します\n"
-            f"    列名を明示する場合: --col-desc '列名'"
-        )
-    if not c_amount:
-        warnings.append(
-            f"金額列が見つかりません（候補: {COL_ALIASES['amount']}）\n"
-            f"    収入・支出の判定が行えません\n"
-            f"    列名を明示する場合: --col-amount '列名'"
-        )
-
-    # ============================================================
-    # STEP 8: サンプル行の金額パース確認
-    # ============================================================
-    amount_parse_failures = []
-    sample_rows = list(csv.DictReader(io.StringIO(content), delimiter=delim))[:5]
-
-    for i, row in enumerate(sample_rows, 1):
-        if c_amount:
-            raw_val = row.get(c_amount, "")
-            parsed  = parse_amount(raw_val)
-            if raw_val and parsed == 0.0 and raw_val.strip() not in ("0", "", "０"):
-                amount_parse_failures.append(
-                    f"行{i}: 金額列の値 {repr(raw_val)} を数値に変換できませんでした"
-                )
-
-    if amount_parse_failures:
-        for msg in amount_parse_failures:
-            warnings.append(msg)
-
-    # ============================================================
-    # 警告表示
-    # ============================================================
-    if warnings:
-        print(f"\n  ⚠ 警告 ({len(warnings)}件):")
-        for i, w in enumerate(warnings, 1):
-            for line in w.splitlines():
-                prefix = f"    {i}. " if line == w.splitlines()[0] else "       "
-                print(f"{prefix}{line}")
-
-    print(f"\n{'='*60}")
-    print(f"  🔄 分類処理開始")
-    print(f"{'='*60}")
-
-    # ============================================================
-    # STEP 9: 分類処理
-    # ============================================================
     clf  = AccountClassifier()
     rows = []
-    skipped_rows = []
 
     for i, row in enumerate(csv.DictReader(io.StringIO(content), delimiter=delim), start=1):
-        # 摘要テキスト取得
         text = (row.get(c_desc) or "").strip() if c_desc else ""
         if not text:
             text = " ".join(v for v in row.values() if v and v.strip())
 
-        # 金額取得
         raw_amt = (row.get(c_amount) or "0") if c_amount else "0"
         amount  = parse_amount(raw_amt)
 
-        # 空行スキップ
         if not text and amount == 0:
-            skipped_rows.append((i, dict(row)))
             continue
 
-        is_income = amount >= 0
-        result    = clf.classify(text, amount=abs(amount), is_income=is_income)
+        # ★ 収支判定ロジックの強化
+        type_val = str(row.get(c_type, "")).strip().lower() if c_type else ""
+        
+        # 1. 区分列に明確な指定がある場合
+        if type_val in ["income", "収入", "入金"]:
+            is_income = True
+        elif type_val in ["expense", "支出", "出金"]:
+            is_income = False
+        else:
+            # 2. 区分指定がない、または空欄の場合のフォールバック
+            if default_type == "income":
+                is_income = True
+            elif default_type == "expense":
+                is_income = False
+            else:
+                # default_type が省略、または不明なら金額の符号で判定
+                is_income = amount > 0
+
+        result = clf.classify(text, amount=abs(amount), is_income=is_income)
 
         rows.append({
             **row,
@@ -768,77 +477,19 @@ def cmd_classify(
             "correct_account":   "",
         })
 
-    # ============================================================
-    # STEP 10: 結果出力・サマリー
-    # ============================================================
-    print(f"\n  処理行数  : {len(rows) + len(skipped_rows)}行")
-    print(f"  分類成功  : {len(rows)}件")
-    print(f"  スキップ  : {len(skipped_rows)}件（空行・金額ゼロ）")
-
     if rows:
         with open(output_path, "w", newline="", encoding="utf-8-sig") as f:
-            writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            writer = csv.DictWriter(f, fieldnames=list(rows.keys()))
             writer.writeheader()
             writer.writerows(rows)
-
-        need_review = sum(1 for r in rows if r["needs_review"] == "要確認")
-        by_account  = {}
-        for r in rows:
-            acc = r["predicted_account"]
-            by_account[acc] = by_account.get(acc, 0) + 1
-
         print(f"\n  ✅ 分類完了 → {output_path}")
-        print(f"  要確認   : {need_review}件（信頼度 < 0.5）")
-
-        print(f"\n  科目別件数:")
-        for acc, cnt in sorted(by_account.items(), key=lambda x: -x[1]):
-            bar = "█" * min(cnt, 20)
-            print(f"    {acc:18s} {bar} {cnt}件")
-
-        print(f"\n  次のステップ:")
-        print(f"    1. {output_path} を開いて 'correct_account' 列に正解を入力")
-        print(f"    2. python classifier.py --learn {output_path}")
-        print(f"    3. python classifier.py --train")
-
     else:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー原因: 有効なデータ行が0件でした")
-        print(f"{'='*60}")
-
-        # スキップされた行の内容を表示して原因を絞り込む
-        if skipped_rows:
-            print(f"\n  スキップされた行（先頭3件）:")
-            for row_num, row_data in skipped_rows[:3]:
-                print(f"    行{row_num}: {dict(list(row_data.items())[:4])}")
-            print(f"\n  考えられる原因:")
-            print(f"    ① 摘要列と金額列の両方が空 → 列名が正しく認識されていない")
-            print(f"    ② 金額が文字列（'¥1,000' 等）でパース失敗")
-        else:
-            print(f"\n  考えられる原因:")
-            print(f"    ① ヘッダー行しかなく、データがない")
-            print(f"    ② 区切り文字が違うため1列として読まれている")
-
-        print(f"\n  ▶ 解決策（試す順番）:")
-        print(f"    Step1: 診断ツールで詳細を確認")
-        print(f"           python diagnose_csv.py {input_path}")
-        print(f"    Step2: 列名を明示して再実行")
-        print(f"           python classifier.py --classify {input_path} \\")
-        print(f"             --col-desc '{c_desc or '内容'}' \\")
-        print(f"             --col-amount '{c_amount or '金額'}' \\")
-        print(f"             --encoding {enc}")
-        print(f"    Step3: 区切り文字を明示")
-        print(f"           python classifier.py --classify {input_path} --delimiter ','")
-        print(f"    Step4: ファイルをUTF-8で保存し直す（Excelなら「CSV UTF-8」で保存）")
+        print(f"\n{'='*60}\n  ❌ エラー原因: 有効なデータ行が0件でした\n{'='*60}")
 
 
 def cmd_learn(corrected_path: str):
-    """
-    ユーザーが修正したCSVから学習データを追加する
-    corrected.csv には predicted_account と correct_account 列が必要
-    """
     clf = AccountClassifier()
     count = 0
-
     with open(corrected_path, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -847,153 +498,66 @@ def cmd_learn(corrected_path: str):
             if text and correct:
                 clf.add_correction(text, correct)
                 count += 1
-
     print(f"[learn] {count}件の正解ラベルを追加しました")
-    print("  → python classifier.py --train で再学習してください")
 
 
 def cmd_train():
-    """training_data.csv からモデルを学習する"""
     if not TRAIN_DATA.exists():
-        print("[train] training_data.csv がありません")
-        print("  まず --classify でデータを分類し、--learn で正解ラベルを追加してください")
-        sys.exit(1)
-
-    df = pd.read_csv(TRAIN_DATA, encoding="utf-8-sig")
-    df = df.dropna(subset=["text", "account"])
+        print("[train] training_data.csv がありません"); sys.exit(1)
+    df = pd.read_csv(TRAIN_DATA, encoding="utf-8-sig").dropna(subset=["text", "account"])
     df = df[df["text"].str.strip() != ""]
-
     if len(df) < 5:
-        print(f"[train] 学習データが少なすぎます（{len(df)}件）。最低5件必要です")
-        sys.exit(1)
-
-    print(f"[train] 学習データ: {len(df)}件 / {df['account'].nunique()}科目")
-
-    # クロスバリデーション（データが十分ある場合）
-    if len(df) >= 20:
-        pipeline = train_model(df)
-        X = df["text"].apply(lambda t: tokens_to_string(tokenize(str(t))))
-        y = df["account"]
-        cv_scores = cross_val_score(
-            pipeline, X, y,
-            cv=StratifiedKFold(n_splits=min(5, len(df) // 3), shuffle=True, random_state=42),
-            scoring="accuracy"
-        )
-        print(f"[train] CV精度: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
-    else:
-        pipeline = train_model(df)
-
-    # 最終モデルを全データで学習
+        print(f"[train] 学習データが少なすぎます。最低5件必要です"); sys.exit(1)
+    pipeline = train_model(df)
     with open(MODEL_PATH, "wb") as f:
         pickle.dump(pipeline, f)
-
     print(f"[train] モデル保存: {MODEL_PATH}")
-
-    # クラス別件数表示
-    print("\n--- 科目別 学習データ件数 ---")
-    for acc, cnt in df["account"].value_counts().items():
-        bar = "█" * min(cnt, 20)
-        print(f"  {acc:20s} {bar} {cnt}件")
 
 
 def cmd_evaluate():
-    """現在のモデルを学習データで評価する"""
     model = load_model()
-    if not model:
-        print("[evaluate] モデルがありません。先に --train を実行してください")
-        sys.exit(1)
-
-    if not TRAIN_DATA.exists():
-        print("[evaluate] training_data.csv がありません")
-        sys.exit(1)
-
+    if not model or not TRAIN_DATA.exists():
+        print("[evaluate] 必要なファイルがありません"); sys.exit(1)
     df = pd.read_csv(TRAIN_DATA, encoding="utf-8-sig").dropna(subset=["text", "account"])
     X = df["text"].apply(lambda t: tokens_to_string(tokenize(str(t))))
     y = df["account"]
     y_pred = model.predict(X)
-
-    print("\n=== 分類レポート ===")
     print(classification_report(y, y_pred, zero_division=0))
-    acc = (y == y_pred).mean()
-    print(f"全体精度: {acc:.1%}")
 
 
 def cmd_add_rule(account: str, keywords: str):
-    """キーワードルールに新しいエントリを追加する"""
     rules = load_rules()
     kw_list = [k.strip() for k in keywords.split(",") if k.strip()]
-    if account not in rules:
-        rules[account] = []
+    if account not in rules: rules[account] = []
     for kw in kw_list:
-        if kw not in rules[account]:
-            rules[account].append(kw)
+        if kw not in rules[account]: rules[account].append(kw)
     save_rules(rules)
     print(f"[rule] '{account}' にキーワードを追加: {kw_list}")
 
 
-def cmd_stats():
-    """分類履歴の統計を表示する"""
-    if not HISTORY_PATH.exists():
-        print("[stats] 履歴がありません")
-        return
-    with open(HISTORY_PATH, encoding="utf-8") as f:
-        history = json.load(f)
-    total    = len(history)
-    corrected = sum(1 for h in history if h.get("corrected"))
-    by_method = {}
-    for h in history:
-        m = h.get("method", "unknown")
-        by_method[m] = by_method.get(m, 0) + 1
-    print(f"\n=== 分類統計 ===")
-    print(f"  総分類数:   {total}件")
-    print(f"  ユーザー修正: {corrected}件（修正率 {corrected/max(total,1):.1%}）")
-    print(f"\n  分類手法の内訳:")
-    for method, cnt in sorted(by_method.items(), key=lambda x: -x[1]):
-        pct = cnt / max(total, 1)
-        print(f"    {method:20s} {cnt}件 ({pct:.1%})")
-
-
-# ===== メイン =====
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="PRiMPO CSV 勘定科目 自動分類エンジン",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-使い方の流れ:
-  1. python classifier.py --classify input.csv
-     → output_classified.csv に予測科目が追記される
-
-  2. output_classified.csv を開き、correct_account 列に正解を入力
-
-  3. python classifier.py --learn output_classified.csv
-     → 正解データを training_data.csv に蓄積
-
-  4. python classifier.py --train
-     → 機械学習モデルを学習・保存
-
-  5. python classifier.py --evaluate
-     → 精度確認
-
-  繰り返すほど精度が向上します。
-        """
-    )
-    parser.add_argument("--classify",   metavar="INPUT_CSV",    help="CSVを分類する")
-    parser.add_argument("--output",     metavar="OUTPUT_CSV",   help="出力先CSVパス", default="output_classified.csv")
-    parser.add_argument("--encoding",   metavar="ENCODING",     help="文字コード指定 (例: utf-8 / cp932 / shift-jis)", default="")
-    parser.add_argument("--delimiter",  metavar="DELIM",        help="区切り文字 (例: , またはタブ)", default="")
-    parser.add_argument("--skip-rows",  metavar="N",            help="先頭N行をスキップ（空行がある場合）", type=int, default=0)
-    parser.add_argument("--col-date",   metavar="COL",          help="日付列名 (例: '日付')", default="")
-    parser.add_argument("--col-desc",   metavar="COL",          help="摘要列名 (例: '内容')", default="")
-    parser.add_argument("--col-amount", metavar="COL",          help="金額列名 (例: '金額')", default="")
-    parser.add_argument("--learn",      metavar="CORRECTED_CSV", help="修正済みCSVを学習データに追加")
-    parser.add_argument("--train",      action="store_true",    help="モデルを学習する")
-    parser.add_argument("--evaluate",   action="store_true",    help="モデルを評価する")
-    parser.add_argument("--stats",      action="store_true",    help="分類統計を表示")
-    parser.add_argument("--add-rule",   nargs=2, metavar=("ACCOUNT", "KEYWORDS"),
-                                        help="ルール追加: --add-rule 旅費交通費 'suica,icoca,バス'")
+    parser = argparse.ArgumentParser(description="PRiMPO CSV 勘定科目 自動分類エンジン (軽貨物版)")
+    
+    parser.add_argument("--classify", help="CSVを分類する")
+    parser.add_argument("--output", help="出力先CSVパス", default="output_classified.csv")
+    parser.add_argument("--encoding", help="文字コード指定", default="")
+    parser.add_argument("--delimiter", help="区切り文字", default="")
+    
+    # 引数の統合
+    parser.add_argument("--skip-rows", help="先頭N行をスキップ", type=int, default=0)
+    parser.add_argument("--col-date", help="日付列名", default="")
+    parser.add_argument("--col-desc", help="摘要列名", default="")
+    parser.add_argument("--col-amount", help="金額列名", default="")
+    parser.add_argument("--col-type", help="収支区分列名", default="")
+    parser.add_argument("--default-type", help="収支不明時のデフォルト (income/expense/省略=符号判定)", default="")
+    
+    parser.add_argument("--learn", help="修正済みCSVを学習データに追加")
+    parser.add_argument("--train", action="store_true", help="モデルを学習する")
+    parser.add_argument("--evaluate", action="store_true", help="モデルを評価する")
+    parser.add_argument("--add-rule", nargs=2, help="ルール追加: --add-rule 科目名 '単語1,単語2'")
 
     args = parser.parse_args()
-
+    
     if args.classify:
         cmd_classify(
             args.classify, args.output,
@@ -1002,17 +566,12 @@ if __name__ == "__main__":
             col_date=args.col_date,
             col_desc=args.col_desc,
             col_amount=args.col_amount,
+            col_type=args.col_type,
             skip_rows=args.skip_rows,
+            default_type=args.default_type
         )
-    elif args.learn:
-        cmd_learn(args.learn)
-    elif args.train:
-        cmd_train()
-    elif args.evaluate:
-        cmd_evaluate()
-    elif args.stats:
-        cmd_stats()
-    elif args.add_rule:
-        cmd_add_rule(args.add_rule[0], args.add_rule[1])
-    else:
-        parser.print_help()
+    elif args.learn: cmd_learn(args.learn)
+    elif args.train: cmd_train()
+    elif args.evaluate: cmd_evaluate()
+    elif args.add_rule: cmd_add_rule(args.add_rule, args.add_rule)
+    else: parser.print_help()
