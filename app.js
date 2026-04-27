@@ -349,6 +349,7 @@ function closeEntryModal() {
 }
 
 // ===== 仕訳保存（ここから正しく復旧） =====
+// ===== 仕訳保存（キーワード診断 ＆ 済マーク機能付き） =====
 function saveEntry() {
   const date = document.getElementById('f-date').value;
   const debitAccount = document.getElementById('f-debit-account').value;
@@ -356,6 +357,7 @@ function saveEntry() {
   const debitAmount = parseFloat(document.getElementById('f-debit-amount').value) || 0;
   const creditAmount = parseFloat(document.getElementById('f-credit-amount').value) || 0;
 
+  // 基本入力チェック
   if (!date || !debitAccount || !creditAccount || debitAmount <= 0 || creditAmount <= 0) {
     showToast('日付・科目・金額を入力してください', 'error');
     return;
@@ -364,6 +366,79 @@ function saveEntry() {
     showToast('借方と貸方の金額が一致しません', 'error');
     return;
   }
+
+  // --- ★ここから：摘要キーワードによる入力ミス診断 ---
+  const memoText = document.getElementById('f-memo').value.toLowerCase();
+  
+  // 1. 【売上系チェック】「売上・報酬・入金」があるのに下が売上高でない場合
+  const incomeKeywords = ['売上', '報酬', '入金', 'amazon', 'uber', '出前館'];
+  const foundIncomeKw = incomeKeywords.find(k => memoText.includes(k));
+  if (foundIncomeKw) {
+    if (creditAccount !== '売上高') {
+      const msg = `【確認：売上の入力ミス？】\n内容に「${foundIncomeKw}」とありますが、下の段（収入・支払元）が「売上高」になっていません。\n\n報酬の入金であれば：\n・上の段：普通預金（入金先）\n・下の段：売上高（収入）\nとするのが正解です。\n\nこのまま保存しますか？`;
+      if (!confirm(msg)) return;
+    }
+  }
+
+  // 2. 【経費系チェック】「ガソリン・高速・駐車場」などがあるのに上が経費科目でない場合
+  const expenseKeywords = [
+    { kw: ['ガソリン', '給油', 'エネオス', '出光', 'レギュラー', '軽油'], acc: '燃料費' },
+    { kw: ['高速', 'ネクスコ', '首都高', 'etc'], acc: '旅費交通費' },
+    { kw: ['タイムズ', 'リパーク', '駐車場', 'パーキング'], acc: '旅費交通費' },
+    { kw: ['オイル', '洗車', 'タイヤ', '点検', '整備'], acc: '車両費' },
+    { kw: ['テープ', '梱包', '段ボール', '台車'], acc: '荷造運賃' }
+  ];
+
+  for (const item of expenseKeywords) {
+    const foundExpKw = item.kw.find(k => memoText.includes(k));
+    if (foundExpKw) {
+      if (debitAccount !== item.acc && debitAccount !== '旅費交通費') {
+        const msg = `【確認：支出の入力ミス？】\n内容に「${foundExpKw}」とありますが、上の段（出費・入金先）が「${item.acc}」になっていません。\n\n経費の支払いであれば：\n・上の段：${item.acc}（出費）\n・下の段：現金 または 普通預金（支払元）\nとするのが正解です。\n\nこのまま保存しますか？`;
+        if (!confirm(msg)) return;
+      }
+      break; 
+    }
+  }
+  // --- ★ここまで：診断ロジック終了 ---
+
+  const debitTaxCode = document.getElementById('f-debit-tax').value;
+  const creditTaxCode = document.getElementById('f-credit-tax').value;
+  const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
+  const kasjiRate = parseFloat(document.getElementById('f-kasji-rate').value) || 50;
+
+  const entry = {
+    id: document.getElementById('edit-id').value || Date.now().toString(),
+    date,
+    debit: {
+      account: debitAccount,
+      sub: document.getElementById('f-debit-sub').value,
+      amount: debitAmount,
+      taxCode: debitTaxCode,
+      taxAmount: calcTaxAmount(debitAmount, debitTaxCode),
+    },
+    credit: {
+      account: creditAccount,
+      sub: document.getElementById('f-credit-sub').value,
+      amount: creditAmount,
+      taxCode: creditTaxCode,
+      taxAmount: calcTaxAmount(creditAmount, creditTaxCode),
+    },
+    memo: document.getElementById('f-memo').value,
+    kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
+    createdAt: Date.now(),
+    manually_saved: true, // ★「済」マークを表示するためのフラグを刻印
+  };
+
+  const existIdx = entries.findIndex(e => e.id === entry.id);
+  if (existIdx >= 0) entries[existIdx] = entry;
+  else entries.push(entry);
+
+  entries.sort((a, b) => a.date.localeCompare(b.date));
+  saveData();
+  closeEntryModal();
+  renderAll(); // 画面を更新して「済」タグや数値を反映
+  showToast('仕訳を保存しました', 'success');
+}
 
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
