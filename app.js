@@ -350,6 +350,7 @@ function closeEntryModal() {
 
 // ===== 仕訳保存（ここから正しく復旧） =====
 // ===== 仕訳保存（キーワード診断 ＆ 済マーク機能付き） =====
+// ===== 仕訳保存（整理・復旧版） =====
 function saveEntry() {
   const date = document.getElementById('f-date').value;
   const debitAccount = document.getElementById('f-debit-account').value;
@@ -367,10 +368,10 @@ function saveEntry() {
     return;
   }
 
-  // --- ★ここから：摘要キーワードによる入力ミス診断 ---
+  // --- 摘要キーワードによる入力ミス診断 ---
   const memoText = document.getElementById('f-memo').value.toLowerCase();
   
-  // 1. 【売上系チェック】「売上・報酬・入金」があるのに下が売上高でない場合
+  // 1. 【売上系チェック】
   const incomeKeywords = ['売上', '報酬', '入金', 'amazon', 'uber', '出前館'];
   const foundIncomeKw = incomeKeywords.find(k => memoText.includes(k));
   if (foundIncomeKw) {
@@ -380,7 +381,7 @@ function saveEntry() {
     }
   }
 
-  // 2. 【経費系チェック】「ガソリン・高速・駐車場」などがあるのに上が経費科目でない場合
+  // 2. 【経費系チェック】
   const expenseKeywords = [
     { kw: ['ガソリン', '給油', 'エネオス', '出光', 'レギュラー', '軽油'], acc: '燃料費' },
     { kw: ['高速', 'ネクスコ', '首都高', 'etc'], acc: '旅費交通費' },
@@ -399,7 +400,6 @@ function saveEntry() {
       break; 
     }
   }
-  // --- ★ここまで：診断ロジック終了 ---
 
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
@@ -426,7 +426,7 @@ function saveEntry() {
     memo: document.getElementById('f-memo').value,
     kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
     createdAt: Date.now(),
-    manually_saved: true, // ★「済」マークを表示するためのフラグを刻印
+    manually_saved: true, // 済マーク用
   };
 
   const existIdx = entries.findIndex(e => e.id === entry.id);
@@ -436,48 +436,10 @@ function saveEntry() {
   entries.sort((a, b) => a.date.localeCompare(b.date));
   saveData();
   closeEntryModal();
-  renderAll(); // 画面を更新して「済」タグや数値を反映
+  renderAll(); // 画面を更新
   showToast('仕訳を保存しました', 'success');
 }
 
-  const debitTaxCode = document.getElementById('f-debit-tax').value;
-  const creditTaxCode = document.getElementById('f-credit-tax').value;
-  const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
-  const kasjiRate = parseFloat(document.getElementById('f-kasji-rate').value) || 50;
-
-  const entry = {
-    id: document.getElementById('edit-id').value || Date.now().toString(),
-    date,
-    debit: {
-      account: debitAccount,
-      sub: document.getElementById('f-debit-sub').value,
-      amount: debitAmount,
-      taxCode: debitTaxCode,
-      taxAmount: calcTaxAmount(debitAmount, debitTaxCode),
-    },
-    credit: {
-      account: creditAccount,
-      sub: document.getElementById('f-credit-sub').value,
-      amount: creditAmount,
-      taxCode: creditTaxCode,
-      taxAmount: calcTaxAmount(creditAmount, creditTaxCode),
-    },
-    memo: document.getElementById('f-memo').value,
-    kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
-    createdAt: Date.now(),
-    manually_saved: true, // 済マークを出すためのフラグ
-  };
-
-  const existIdx = entries.findIndex(e => e.id === entry.id);
-  if (existIdx >= 0) entries[existIdx] = entry;
-  else entries.push(entry);
-
-  entries.sort((a, b) => a.date.localeCompare(b.date));
-  saveData();
-  closeEntryModal();
-  renderAll(); // 画面を更新してアイコンなどを再描画
-  showToast('仕訳を保存しました', 'success');
-}
 
 function deleteEntry(id) {
   if (!confirm('この仕訳を削除しますか？')) return;
