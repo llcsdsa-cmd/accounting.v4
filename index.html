@@ -46,6 +46,15 @@
 </nav>
 
 <main class="main-content" id="main-content">
+  
+<div class="section-card import-zone" id="import-zone" onclick="document.getElementById('csv-file').click()">
+  <div class="import-svg-icon" id="import-svg-icon"></div>
+  <div class="import-text">PRiMPO CSV を取り込む</div>
+  <div class="import-sub">タップしてファイルを選択</div>
+  <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="importPrimpoCSV(event)">
+</div>
+
+<div class="notice" id="import-notice" style="display:none"></div>
 
 <div id="storage-warning" style="display:none" class="storage-warning-bar"></div>
 
@@ -170,13 +179,7 @@
       <div id="recent-entries"></div>
     </div>
 
-    <div class="section-card import-zone" id="import-zone" onclick="document.getElementById('csv-file').click()">
-      <div class="import-svg-icon" id="import-svg-icon"></div>
-      <div class="import-text">PRiMPO CSVを取り込む</div>
-      <div class="import-sub">タップしてファイルを選択</div>
-      <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="importPrimpoCSV(event)">
-    </div>
-    <div class="notice" id="import-notice" style="display:none"></div>
+
   </div>
 
   <!-- 仕訳帳 -->
