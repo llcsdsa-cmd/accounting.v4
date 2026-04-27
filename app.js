@@ -90,9 +90,14 @@ function initIcons() {
   });
 
   const debitEl = document.getElementById('dc-icon-debit');
-  if (debitEl) debitEl.innerHTML = icon('debit', 'dc-svg');
+  if (debitEl) {
+    debitEl.innerHTML = icon('debit', 'dc-svg') + ' <span style="font-size:0.85em; margin-left:4px; font-weight:bold; color:#d35400;">(出費・入金先)</span>';
+  }
   const creditEl = document.getElementById('dc-icon-credit');
-  if (creditEl) creditEl.innerHTML = icon('credit', 'dc-svg');
+  if (creditEl) {
+    creditEl.innerHTML = icon('credit', 'dc-svg') + ' <span style="font-size:0.85em; margin-left:4px; font-weight:bold; color:#2980b9;">(収入・支払元)</span>';
+  }
+
 
   const expMap = {
     'exp-icon-journal': 'journal',
