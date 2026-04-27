@@ -344,21 +344,33 @@ function closeEntryModal() {
 }
 
 // ===== 仕訳保存 =====
-function saveEntry() {
-  const date = document.getElementById('f-date').value;
-  const debitAccount = document.getElementById('f-debit-account').value;
-  const creditAccount = document.getElementById('f-credit-account').value;
-  const debitAmount = parseFloat(document.getElementById('f-debit-amount').value) || 0;
-  const creditAmount = parseFloat(document.getElementById('f-credit-amount').value) || 0;
+  const debitTaxCode = document.getElementById('f-debit-tax').value;
+  const creditTaxCode = document.getElementById('f-credit-tax').value;
+  const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
+  const kasjiRate = parseFloat(document.getElementById('f-kasji-rate').value) || 50;
 
-  if (!date || !debitAccount || !creditAccount || debitAmount <= 0 || creditAmount <= 0) {
-    showToast('日付・科目・金額を入力してください', 'error');
-    return;
-  }
-  if (debitAmount !== creditAmount) {
-    showToast('借方と貸方の金額が一致しません', 'error');
-    return;
-  }
+  const entry = {
+    id: document.getElementById('edit-id').value || Date.now().toString(),
+    date,
+    debit: {
+      account: debitAccount,
+      sub: document.getElementById('f-debit-sub').value,
+      amount: debitAmount,
+      taxCode: debitTaxCode,
+      taxAmount: calcTaxAmount(debitAmount, debitTaxCode),
+    },
+    credit: {
+      account: creditAccount,
+      sub: document.getElementById('f-credit-sub').value,
+      amount: creditAmount,
+      taxCode: creditTaxCode,
+      taxAmount: calcTaxAmount(creditAmount, creditTaxCode),
+    },
+    memo: document.getElementById('f-memo').value,
+    kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
+    createdAt: Date.now(),
+    manually_saved: true, // ★この1行を追加！
+  };
 
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
@@ -830,6 +842,10 @@ function entryCard(e, compact) {
   const kasjiTag = e.kasji ? `<span class="tag kasji-tag">家事按分 ${e.kasji.rate}%</span>` : '';
   const taxTag = (e.debit.taxAmount > 0 || e.credit.taxAmount > 0) ?
     `<span class="tag tax-tag">消費税</span>` : '';
+  
+  // ★追加：手動保存（確認済み）フラグがある場合に「済」タグを表示
+  const checkedTag = e.manually_saved ? `<span class="tag checked-tag" style="background:#1a7a5e; color:white;">済</span>` : '';
+
   const debitType = getAccountType(e.debit.account);
   const creditType = getAccountType(e.credit.account);
   const amountColor = creditType === 'income' ? 'income-color' : (debitType === 'expense' ? 'expense-color' : '');
@@ -838,7 +854,7 @@ function entryCard(e, compact) {
   <div class="entry-card">
     <div class="entry-header">
       <span class="entry-date">${fmtDate(e.date)}</span>
-      <div class="entry-tags">${kasjiTag}${taxTag}</div>
+      <div class="entry-tags">${checkedTag}${kasjiTag}${taxTag}</div> <!-- ★ここにcheckedTagを挿入 -->
       <div class="entry-actions">
         <button class="icon-btn" onclick="openEntryModal('${e.id}')">✎</button>
         <button class="icon-btn del" onclick="deleteEntry('${e.id}')">✕</button>
