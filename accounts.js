@@ -66,6 +66,9 @@ const ACCOUNTS = {
       { code: '522', name: '通信費', type: 'expense' },     // 家事按分対象
       { code: '523', name: '消耗品費', type: 'expense' },
       { code: '524', name: '旅費交通費', type: 'expense' },
+      { code: '5241', name: '燃料費', type: 'expense' },    // ★追加
+      { code: '5242', name: '車両費', type: 'expense' },    // ★追加
+      { code: '5243', name: '荷造運賃', type: 'expense' },  // ★追加
       { code: '525', name: '接待交際費', type: 'expense' },
       { code: '526', name: '広告宣伝費', type: 'expense' },
       { code: '527', name: '損害保険料', type: 'expense' }, // 家事按分対象
@@ -75,6 +78,7 @@ const ACCOUNTS = {
       { code: '531', name: '地代家賃（家事按分）', type: 'expense' },
       { code: '540', name: '租税公課', type: 'expense' },
       { code: '550', name: '雑費', type: 'expense' },
+
     ]
   }
 };
