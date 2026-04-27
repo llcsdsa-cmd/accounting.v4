@@ -198,7 +198,6 @@ class AccountClassifier:
             json.dump(self.history, f, ensure_ascii=False, indent=2)
 
     def classify(self, text: str, amount: float = 0.0, is_income: bool = False) -> dict:
-        # 収入は先に判定
         if is_income:
             return {
                 "account":      "売上高",
@@ -218,7 +217,6 @@ class AccountClassifier:
 
         rule_account, rule_confidence = classify_by_rules(text, self.rules)
 
-        # 【判定ロジック】キーワードルールを最優先
         if rule_confidence > 0:
             account    = rule_account
             confidence = rule_confidence
@@ -324,7 +322,6 @@ def detect_delimiter(first_line: str) -> str:
     return max(counts, key=counts.get)
 
 
-# 列名のエイリアス候補
 COL_ALIASES = {
     "date":        ["date", "日付", "取引日", "年月日", "Date", "支払日"],
     "description": ["description", "内容", "摘要", "件名", "Description", "取引内容", "備考", "明細", "name", "Name", "品名", "店舗名"],
@@ -366,9 +363,9 @@ def cmd_classify(
     col_date: str = "",
     col_desc: str = "",
     col_amount: str = "",
-    col_type: str = "",          # ★追加引数
-    skip_rows: int = 0,          # ★手動スキップ
-    default_type: str = "",      # ★追加引数
+    col_type: str = "",
+    skip_rows: int = 0,
+    default_type: str = "",
 ):
     p = Path(input_path)
 
@@ -380,8 +377,6 @@ def cmd_classify(
     if size == 0:
         print(f"\n{'='*60}\n  ❌ エラー: ファイルが空です（0 bytes）\n{'='*60}")
         return
-
-    print(f"\n{'='*60}\n  📂 CSV読み込み診断レポート\n{'='*60}\n  ファイル: {input_path}\n  サイズ  : {size:,} bytes")
 
     with open(input_path, "rb") as f:
         raw = f.read(min(size, 4096))
@@ -406,7 +401,6 @@ def cmd_classify(
     all_lines  = content.splitlines()
     data_lines = [l for l in all_lines if l.strip()]
 
-    # skip_rows 手動指定、または自動ゴミ行スキップ
     auto_skip = skip_rows
     if auto_skip == 0:
         for li, line in enumerate(data_lines):
@@ -418,7 +412,7 @@ def cmd_classify(
         content = "\n".join(data_lines[auto_skip:])
         data_lines = data_lines[auto_skip:]
 
-    delim = delimiter or detect_delimiter(data_lines)
+    delim = delimiter or detect_delimiter(data_lines[0])
     
     import io
     reader    = csv.DictReader(io.StringIO(content), delimiter=delim)
@@ -435,6 +429,7 @@ def cmd_classify(
 
     clf  = AccountClassifier()
     rows = []
+    skipped_records = 0
 
     for i, row in enumerate(csv.DictReader(io.StringIO(content), delimiter=delim), start=1):
         text = (row.get(c_desc) or "").strip() if c_desc else ""
@@ -444,26 +439,21 @@ def cmd_classify(
         raw_amt = (row.get(c_amount) or "0") if c_amount else "0"
         amount  = parse_amount(raw_amt)
 
+        # 摘要が空、かつ金額がゼロの行はスキップ
         if not text and amount == 0:
+            skipped_records += 1
             continue
 
-        # ★ 収支判定ロジックの強化
         type_val = str(row.get(c_type, "")).strip().lower() if c_type else ""
         
-        # 1. 区分列に明確な指定がある場合
         if type_val in ["income", "収入", "入金"]:
             is_income = True
         elif type_val in ["expense", "支出", "出金"]:
             is_income = False
         else:
-            # 2. 区分指定がない、または空欄の場合のフォールバック
-            if default_type == "income":
-                is_income = True
-            elif default_type == "expense":
-                is_income = False
-            else:
-                # default_type が省略、または不明なら金額の符号で判定
-                is_income = amount > 0
+            if default_type == "income": is_income = True
+            elif default_type == "expense": is_income = False
+            else: is_income = amount > 0
 
         result = clf.classify(text, amount=abs(amount), is_income=is_income)
 
@@ -477,14 +467,50 @@ def cmd_classify(
             "correct_account":   "",
         })
 
+    # ============================================================
+    # ★ 0件時の詳細エラー診断ロジックの追加
+    # ============================================================
     if rows:
         with open(output_path, "w", newline="", encoding="utf-8-sig") as f:
-            writer = csv.DictWriter(f, fieldnames=list(rows.keys()))
+            writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader()
             writer.writerows(rows)
-        print(f"\n  ✅ 分類完了 → {output_path}")
+        print(f"\n  ✅ 分類完了 → {output_path} ({len(rows)}件)")
     else:
-        print(f"\n{'='*60}\n  ❌ エラー原因: 有効なデータ行が0件でした\n{'='*60}")
+        print(f"\n{'='*60}")
+        print(f"  ❌ エラー原因: 有効なデータ行が0件でした（処理を中断します）")
+        print(f"{'='*60}")
+        print(f"\n🔍 診断レポート:")
+        print(f"    ・ファイル内の総行数 : {len(data_lines)}行")
+        print(f"    ・CSVで認識された列名: {fieldnames}")
+        print(f"    ・ゴミ行スキップ件数 : {skipped_records}件")
+        
+        print(f"\n❓ 考えられる原因と対策:")
+        
+        # 1. 摘要列や金額列の認識失敗をチェック
+        if not c_desc and not c_amount:
+            print(f"    ▶ 原因①：摘要列（内容）や金額列が正しく認識されていません。")
+            print(f"      （現在の登録候補には {fieldnames} のような列名が含まれていません）")
+            print(f"      【対策】明示的に列名を指定して実行してください。")
+            print(f"      例: python classifier.py --classify {input_path} --col-desc '実際の列名' --col-amount '実際の金額列名'")
+        
+        # 2. 全行が「摘要なし・金額0」でスキップされた可能性をチェック
+        elif skipped_records > 0 and len(rows) == 0:
+            print(f"    ▶ 原因②：すべてのデータが「内容が空欄」かつ「金額が0円」と判定され、")
+            print(f"              ゴミ行として自動スキップされました。")
+            print(f"      【対策】PRiMPOからのエクスポートで、金額や店舗名が含まれるように出力設定を見直してください。")
+        
+        # 3. 区切り文字の異常
+        elif len(fieldnames) == 1:
+            print(f"    ▶ 原因③：列が1つしか認識されていません。区切り文字（カンマやタブ）が間違っている可能性があります。")
+            print(f"      【対策】区切り文字を明示してください。")
+            print(f"      例: python classifier.py --classify {input_path} --delimiter ','")
+            
+        print(f"\n👉 分類を強制成功させるための最善の解決策:")
+        print(f"    ファイルをメモ帳等で開き、1行目（ヘッダー）の項目名を直接、")
+        print(f"    「日付,内容,金額,収支」などに書き換えてから再実行するのが一番確実です。")
+        print(f"{'='*60}")
+        sys.exit(1) # 処理を終了
 
 
 def cmd_learn(corrected_path: str):
@@ -543,7 +569,6 @@ if __name__ == "__main__":
     parser.add_argument("--encoding", help="文字コード指定", default="")
     parser.add_argument("--delimiter", help="区切り文字", default="")
     
-    # 引数の統合
     parser.add_argument("--skip-rows", help="先頭N行をスキップ", type=int, default=0)
     parser.add_argument("--col-date", help="日付列名", default="")
     parser.add_argument("--col-desc", help="摘要列名", default="")
