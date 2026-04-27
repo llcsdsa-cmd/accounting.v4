@@ -372,6 +372,7 @@ function closeEntryModal() {
     manually_saved: true, // ★この1行を追加！
   };
 
+  // --- このあたりが重複していないかチェック ---
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
   const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
@@ -397,7 +398,10 @@ function closeEntryModal() {
     memo: document.getElementById('f-memo').value,
     kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
     createdAt: Date.now(),
+    manually_saved: true, // 済マーク用
   };
+  // ------------------------------------------
+
 
   const existIdx = entries.findIndex(e => e.id === entry.id);
   if (existIdx >= 0) entries[existIdx] = entry;
