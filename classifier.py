@@ -414,6 +414,25 @@ def cmd_classify(
 
     delim = delimiter or detect_delimiter(data_lines[0])
     
+    # ============================================================
+    # ★ STEP 4c: 空列（先頭の余計なカンマ）を確実に除去するロジック
+    # ============================================================
+    if data_lines:
+        import io
+        # 実際にCSVとして1行読んでみる
+        reader = csv.reader(io.StringIO(content), delimiter=delim)
+        first_row = next(reader, [])
+        
+        # 1列目が空欄で、2列目以降に値がある場合、左端の空列を自動削除
+        if first_row and first_row[0].strip() == '' and any(c.strip() for c in first_row[1:]):
+            new_lines = []
+            for line in data_lines:
+                parts = line.split(delim)
+                # 1列目を削る
+                new_lines.append(delim.join(parts[1:]))
+            content = "\n".join(new_lines)
+            data_lines = new_lines
+
     import io
     reader    = csv.DictReader(io.StringIO(content), delimiter=delim)
     fieldnames = reader.fieldnames or []
@@ -439,7 +458,6 @@ def cmd_classify(
         raw_amt = (row.get(c_amount) or "0") if c_amount else "0"
         amount  = parse_amount(raw_amt)
 
-        # 摘要が空、かつ金額がゼロの行はスキップ
         if not text and amount == 0:
             skipped_records += 1
             continue
@@ -467,9 +485,6 @@ def cmd_classify(
             "correct_account":   "",
         })
 
-    # ============================================================
-    # ★ 0件時の詳細エラー診断ロジックの追加
-    # ============================================================
     if rows:
         with open(output_path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
@@ -477,40 +492,9 @@ def cmd_classify(
             writer.writerows(rows)
         print(f"\n  ✅ 分類完了 → {output_path} ({len(rows)}件)")
     else:
-        print(f"\n{'='*60}")
-        print(f"  ❌ エラー原因: 有効なデータ行が0件でした（処理を中断します）")
-        print(f"{'='*60}")
-        print(f"\n🔍 診断レポート:")
-        print(f"    ・ファイル内の総行数 : {len(data_lines)}行")
-        print(f"    ・CSVで認識された列名: {fieldnames}")
-        print(f"    ・ゴミ行スキップ件数 : {skipped_records}件")
-        
-        print(f"\n❓ 考えられる原因と対策:")
-        
-        # 1. 摘要列や金額列の認識失敗をチェック
-        if not c_desc and not c_amount:
-            print(f"    ▶ 原因①：摘要列（内容）や金額列が正しく認識されていません。")
-            print(f"      （現在の登録候補には {fieldnames} のような列名が含まれていません）")
-            print(f"      【対策】明示的に列名を指定して実行してください。")
-            print(f"      例: python classifier.py --classify {input_path} --col-desc '実際の列名' --col-amount '実際の金額列名'")
-        
-        # 2. 全行が「摘要なし・金額0」でスキップされた可能性をチェック
-        elif skipped_records > 0 and len(rows) == 0:
-            print(f"    ▶ 原因②：すべてのデータが「内容が空欄」かつ「金額が0円」と判定され、")
-            print(f"              ゴミ行として自動スキップされました。")
-            print(f"      【対策】PRiMPOからのエクスポートで、金額や店舗名が含まれるように出力設定を見直してください。")
-        
-        # 3. 区切り文字の異常
-        elif len(fieldnames) == 1:
-            print(f"    ▶ 原因③：列が1つしか認識されていません。区切り文字（カンマやタブ）が間違っている可能性があります。")
-            print(f"      【対策】区切り文字を明示してください。")
-            print(f"      例: python classifier.py --classify {input_path} --delimiter ','")
-            
-        print(f"\n👉 分類を強制成功させるための最善の解決策:")
-        print(f"    ファイルをメモ帳等で開き、1行目（ヘッダー）の項目名を直接、")
-        print(f"    「日付,内容,金額,収支」などに書き換えてから再実行するのが一番確実です。")
-        print(f"{'='*60}")
-        sys.exit(1) # 処理を終了
+        print(f"\n{'='*60}\n  ❌ エラー原因: 有効なデータ行が0件でした\n{'='*60}")
+        print(f"🔍 診断レポート:\n    ・認識された列名: {fieldnames}")
+        sys.exit(1)
 
 
 def cmd_learn(corrected_path: str):
@@ -568,7 +552,6 @@ if __name__ == "__main__":
     parser.add_argument("--output", help="出力先CSVパス", default="output_classified.csv")
     parser.add_argument("--encoding", help="文字コード指定", default="")
     parser.add_argument("--delimiter", help="区切り文字", default="")
-    
     parser.add_argument("--skip-rows", help="先頭N行をスキップ", type=int, default=0)
     parser.add_argument("--col-date", help="日付列名", default="")
     parser.add_argument("--col-desc", help="摘要列名", default="")
