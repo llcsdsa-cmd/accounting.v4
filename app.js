@@ -343,6 +343,23 @@ function closeEntryModal() {
   document.getElementById('modal-overlay').style.display = 'none';
 }
 
+// ===== 仕訳保存（ここから正しく復旧） =====
+function saveEntry() {
+  const date = document.getElementById('f-date').value;
+  const debitAccount = document.getElementById('f-debit-account').value;
+  const creditAccount = document.getElementById('f-credit-account').value;
+  const debitAmount = parseFloat(document.getElementById('f-debit-amount').value) || 0;
+  const creditAmount = parseFloat(document.getElementById('f-credit-amount').value) || 0;
+
+  if (!date || !debitAccount || !creditAccount || debitAmount <= 0 || creditAmount <= 0) {
+    showToast('日付・科目・金額を入力してください', 'error');
+    return;
+  }
+  if (debitAmount !== creditAmount) {
+    showToast('借方と貸方の金額が一致しません', 'error');
+    return;
+  }
+
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
   const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
@@ -378,8 +395,7 @@ function closeEntryModal() {
   entries.sort((a, b) => a.date.localeCompare(b.date));
   saveData();
   closeEntryModal();
-
-  renderAll();
+  renderAll(); // 画面を更新してアイコンなどを再描画
   showToast('仕訳を保存しました', 'success');
 }
 
