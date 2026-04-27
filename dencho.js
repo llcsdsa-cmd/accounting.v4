@@ -359,7 +359,7 @@ function exportDenchoCSV() {
   showToast('電帳法CSVをエクスポートしました', 'success');
 }
 
-// ===== PRiMPOインポート拡張版（電帳法レコード生成付き） =====
+// ===== PRiMPOインポート拡張版（電帳法レコード生成付き・0件エラー回避・強制読込版） =====
 async function importPrimpoCSVWithDencho(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -369,22 +369,64 @@ async function importPrimpoCSVWithDencho(file) {
       let imported = 0;
       const newRecords = [];
 
+      // ヘッダー行（1行目）から「内容」や「金額」が何番目の列にあるか自動で探す
+      let firstLine = lines[0] || "";
+      let delim = firstLine.includes('\t') ? '\t' : ',';
+      let headerCols = firstLine.split(delim).map(c => c.replace(/^"|"$/g, '').trim());
+      
+      // 左端に余分な空の列がある場合は削る
+      let offset = 0;
+      if (headerCols[0] === '' && headerCols.length > 1) {
+        offset = 1;
+        headerCols = headerCols.slice(1);
+      }
+
+      // 列番号の特定（見つからなければデフォルト値）
+      let dateIdx = headerCols.findIndex(c => c.includes('日')) + offset;
+      let descIdx = headerCols.findIndex(c => c.includes('内容') || c.includes('摘要') || c.includes('品名') || c.includes('店舗')) + offset;
+      let amtIdx = headerCols.findIndex(c => c.includes('金額') || c.includes('価格')) + offset;
+
+      if (dateIdx < offset) dateIdx = 0 + offset;
+      if (descIdx < offset) descIdx = 1 + offset;
+      if (amtIdx < offset) amtIdx = 2 + offset;
+
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
-        const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-        if (cols.length < 3) continue;
-        const date = cols[0] || new Date().toISOString().slice(0, 10);
-        const desc = cols[1] || 'PRiMPO取込';
-        const rawAmt = parseFloat(cols[2]);
-        if (isNaN(rawAmt)) continue;
+        if (!line.trim()) continue;
+        
+        const cols = line.split(delim).map(c => c.replace(/^"|"$/g, '').trim());
+        if (cols.length < 2) continue;
+
+        // データの取得
+        let date = cols[dateIdx] || new Date().toISOString().slice(0, 10);
+        let desc = cols[descIdx] || 'PRiMPO取込';
+        let rawAmtStr = cols[amtIdx] || "0";
+        
+        // 金額の文字列からカンマや¥を排除して数値化
+        rawAmtStr = rawAmtStr.replace(/,/g, '').replace(/¥/g, '').replace(/￥/g, '');
+        const rawAmt = parseFloat(rawAmtStr);
         const amount = Math.abs(rawAmt);
         const isIncome = rawAmt >= 0;
+
+        // ★ 軽貨物ドライバー用のキーワード簡易自動分類（AIの代わりの初期判定）
+        let predictedAccount = "消耗品費";
+        const text_n = desc.toLowerCase();
+        
+        if (text_n.includes('ガソリン') || text_n.includes('レギュラー') || text_n.includes('軽油') || text_n.includes('エネオス') || text_n.includes('出光')) {
+          predictedAccount = "燃料費";
+        } else if (text_n.includes('高速') || text_n.includes('ネクスコ') || text_n.includes('タイムズ') || text_n.includes('パーキング') || text_n.includes('etc')) {
+          predictedAccount = "旅費交通費";
+        } else if (text_n.includes('洗車') || text_n.includes('オイル') || text_n.includes('タイヤ') || text_n.includes('オートバックス')) {
+          predictedAccount = "車両費";
+        } else if (text_n.includes('台車') || text_n.includes('テープ') || text_n.includes('梱包')) {
+          predictedAccount = "荷造運賃";
+        }
 
         const entry = {
           id: Date.now().toString() + '_' + i,
           date,
           debit: {
-            account: isIncome ? '普通預金' : (cols[3] || '消耗品費'),
+            account: isIncome ? '普通預金' : predictedAccount,
             sub: '', amount,
             taxCode: 'non', taxAmount: 0,
           },
@@ -407,14 +449,16 @@ async function importPrimpoCSVWithDencho(file) {
 
       entries.sort((a, b) => a.date.localeCompare(b.date));
       dencho.push(...newRecords);
-      saveData();
-      saveDencho();
-      renderAll();
-      renderDencho();
+      
+      // グローバル関数（app.jsなどにあるはずの関数）を呼び出して保存と再描画
+      if (typeof saveData === 'function') saveData();
+      if (typeof saveDencho === 'function') saveDencho();
+      if (typeof renderAll === 'function') renderAll();
+      if (typeof renderDencho === 'function') renderDencho();
 
       const notice = document.getElementById('import-notice');
       if (notice) {
-        notice.textContent = `${imported}件をPRiMPOから取り込みました。電帳法台帳に登録済み。科目・税区分を確認してください。`;
+        notice.textContent = `${imported}件をPRiMPOから取り込みました。電帳法台帳に登録済み。`;
         notice.style.display = 'block';
       }
       showToast(`${imported}件インポート・電帳法登録完了`, 'success');
