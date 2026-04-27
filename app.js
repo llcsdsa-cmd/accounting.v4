@@ -343,7 +343,6 @@ function closeEntryModal() {
   document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// ===== 仕訳保存 =====
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
   const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
@@ -369,39 +368,8 @@ function closeEntryModal() {
     memo: document.getElementById('f-memo').value,
     kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
     createdAt: Date.now(),
-    manually_saved: true, // ★この1行を追加！
+    manually_saved: true, // 済マークを出すためのフラグ
   };
-
-  // --- このあたりが重複していないかチェック ---
-  const debitTaxCode = document.getElementById('f-debit-tax').value;
-  const creditTaxCode = document.getElementById('f-credit-tax').value;
-  const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
-  const kasjiRate = parseFloat(document.getElementById('f-kasji-rate').value) || 50;
-
-  const entry = {
-    id: document.getElementById('edit-id').value || Date.now().toString(),
-    date,
-    debit: {
-      account: debitAccount,
-      sub: document.getElementById('f-debit-sub').value,
-      amount: debitAmount,
-      taxCode: debitTaxCode,
-      taxAmount: calcTaxAmount(debitAmount, debitTaxCode),
-    },
-    credit: {
-      account: creditAccount,
-      sub: document.getElementById('f-credit-sub').value,
-      amount: creditAmount,
-      taxCode: creditTaxCode,
-      taxAmount: calcTaxAmount(creditAmount, creditTaxCode),
-    },
-    memo: document.getElementById('f-memo').value,
-    kasji: kasjiEnabled ? { rate: kasjiRate, bizAmount: Math.round(debitAmount * kasjiRate / 100) } : null,
-    createdAt: Date.now(),
-    manually_saved: true, // 済マーク用
-  };
-  // ------------------------------------------
-
 
   const existIdx = entries.findIndex(e => e.id === entry.id);
   if (existIdx >= 0) entries[existIdx] = entry;
@@ -410,6 +378,7 @@ function closeEntryModal() {
   entries.sort((a, b) => a.date.localeCompare(b.date));
   saveData();
   closeEntryModal();
+
   renderAll();
   showToast('仕訳を保存しました', 'success');
 }
