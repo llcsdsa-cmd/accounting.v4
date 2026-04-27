@@ -359,13 +359,12 @@ function exportDenchoCSV() {
   showToast('電帳法CSVをエクスポートしました', 'success');
 }
 
-// ===== PRiMPOインポート拡張版（電帳法レコード生成付き・カンマ空行・0件回避 最終版） =====
+// ===== PRiMPOインポート拡張版（電帳法レコード生成付き・日付バグ修正版） =====
 async function importPrimpoCSVWithDencho(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const text = ev.target.result;
-      // 空行を無視して、中身がある行だけを配列にする
       const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       let imported = 0;
       const newRecords = [];
@@ -376,12 +375,11 @@ async function importPrimpoCSVWithDencho(file) {
         return;
       }
 
-      // 【修正】1行目、または2行目から「日付」や「金額」が書かれている見出し行（ヘッダー）を探す
+      // 1行目、または2行目から「日付」や「金額」が書かれている見出し行を探す
       let headerIdx = 0;
       let headerCols = [];
       for (let i = 0; i < Math.min(lines.length, 3); i++) {
         let cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-        // 「日」や「金額」という文字が含まれる行をヘッダーと判定
         if (cols.some(c => c.includes('日')) && cols.some(c => c.includes('金額') || c.includes('価格'))) {
           headerIdx = i;
           headerCols = cols;
@@ -389,22 +387,18 @@ async function importPrimpoCSVWithDencho(file) {
         }
       }
 
-      // もし見出し行が見つからなかった場合の保険（決め打ち）
       if (headerCols.length === 0) {
         headerCols = lines[0].split(',').map(c => c.replace(/^"|"$/g, '').trim());
       }
 
-      // 「日付」「内容」「金額」が何番目の列にあるか自動で特定する
       let dateIdx = headerCols.findIndex(c => c.includes('日'));
       let descIdx = headerCols.findIndex(c => c.includes('内容') || c.includes('摘要') || c.includes('品名') || c.includes('店舗') || c.includes('備考'));
       let amtIdx = headerCols.findIndex(c => c.includes('金額') || c.includes('価格'));
 
-      // 該当する列名が見つからない場合のフォールバック（左端のカンマ対策）
       if (dateIdx < 0) dateIdx = headerCols.findIndex(c => c !== "") || 1;
       if (descIdx < 0) descIdx = dateIdx + 1;
       if (amtIdx < 0) amtIdx = descIdx + 1;
 
-      // 見出し行の次の行からデータを読み込む
       for (let i = headerIdx + 1; i < lines.length; i++) {
         const line = lines[i];
         if (!line.trim()) continue;
@@ -412,23 +406,37 @@ async function importPrimpoCSVWithDencho(file) {
         const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
         if (cols.length < 2) continue;
 
-        // 指定された列番号からデータを取得
-        let date = cols[dateIdx] || new Date().toISOString().slice(0, 10);
+        let rawDate = cols[dateIdx] || "";
         let desc = cols[descIdx] || 'PRiMPO取込';
         let rawAmtStr = cols[amtIdx] || "0";
         
-        // 日付のゴミ取り（日付の列に「日付」という文字がそのまま残っていたらスキップ）
-        if (date.includes('日')) continue;
+        if (rawDate.includes('日')) continue;
 
-        // 金額の文字列からカンマや記号を排除して数値にする
+        // ★修正ポイント：日付のフォーマットを「YYYY-MM-DD」に強制変換する
+        let date = new Date().toISOString().slice(0, 10); // デフォルトは今日の日付
+        if (rawDate) {
+          // 「2026/04/20」や「2026.04.20」を「2026-04-20」に変換
+          let normalizedDate = rawDate.replace(/\//g, '-').replace(/\./g, '-');
+          
+          // 正しい日付の形になっているかチェック
+          if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(normalizedDate)) {
+            const parts = normalizedDate.split('-');
+            // 月と日を必ず2桁（04など）に揃える
+            const yyyy = parts[0];
+            const mm = parts[1].padStart(2, '0');
+            const dd = parts[2].padStart(2, '0');
+            date = `${yyyy}-${mm}-${dd}`;
+          }
+        }
+
         rawAmtStr = rawAmtStr.replace(/,/g, '').replace(/¥/g, '').replace(/￥/g, '');
         const rawAmt = parseFloat(rawAmtStr);
-        if (isNaN(rawAmt)) continue; // 数値化できない行は飛ばす
+        if (isNaN(rawAmt)) continue; 
         
         const amount = Math.abs(rawAmt);
-        const isIncome = rawAmt >= 0;
+        const isIncome = false; 
 
-        // 軽貨物ドライバー用のキーワード簡易自動分類 [DEFAULT_RULES]
+        // 軽貨物ドライバー用のキーワード簡易自動分類
         let predictedAccount = "消耗品費";
         const text_n = desc.toLowerCase();
         
@@ -461,7 +469,6 @@ async function importPrimpoCSVWithDencho(file) {
         };
         entries.push(entry);
 
-        // 電帳法レコード生成
         const denchoRec = await createDenchoRecord(entry, line, file.name, file.size);
         newRecords.push(denchoRec);
         imported++;
@@ -470,7 +477,6 @@ async function importPrimpoCSVWithDencho(file) {
       entries.sort((a, b) => a.date.localeCompare(b.date));
       dencho.push(...newRecords);
       
-      // 画面の更新と保存
       if (typeof saveData === 'function') saveData();
       if (typeof saveDencho === 'function') saveDencho();
       if (typeof renderAll === 'function') renderAll();
@@ -484,8 +490,6 @@ async function importPrimpoCSVWithDencho(file) {
       showToast(`${imported}件インポート・電帳法登録完了`, 'success');
       resolve(imported);
     };
-    // UTF-8で読み込み
     reader.readAsText(file, 'UTF-8');
   });
 }
-
