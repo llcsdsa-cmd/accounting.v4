@@ -1,5 +1,5 @@
 """
-classifier.py — 勘定科目自動分類エンジン（軽貨物ドライバー特化版）
+classifier.py — 勘定科目自動分類エンジン（軽貨物ドライバー特化版・強制インポート強化）
 """
 
 import argparse
@@ -401,34 +401,20 @@ def cmd_classify(
     all_lines  = content.splitlines()
     data_lines = [l for l in all_lines if l.strip()]
 
-    auto_skip = skip_rows
-    if auto_skip == 0:
-        for li, line in enumerate(data_lines):
-            stripped = line.replace(delimiter or ',', '').strip()
-            if stripped == '': auto_skip = li + 1
-            else: break
-
-    if auto_skip > 0:
-        content = "\n".join(data_lines[auto_skip:])
-        data_lines = data_lines[auto_skip:]
+    # ゴミ行スキップを完全に無効化（1行目から強制実行）
+    content = "\n".join(data_lines)
 
     delim = delimiter or detect_delimiter(data_lines[0])
     
-    # ============================================================
-    # ★ STEP 4c: 空列（先頭の余計なカンマ）を確実に除去するロジック
-    # ============================================================
+    # 左端の余分な空列（カンマ）の除去
     if data_lines:
         import io
-        # 実際にCSVとして1行読んでみる
         reader = csv.reader(io.StringIO(content), delimiter=delim)
         first_row = next(reader, [])
-        
-        # 1列目が空欄で、2列目以降に値がある場合、左端の空列を自動削除
         if first_row and first_row[0].strip() == '' and any(c.strip() for c in first_row[1:]):
             new_lines = []
             for line in data_lines:
                 parts = line.split(delim)
-                # 1列目を削る
                 new_lines.append(delim.join(parts[1:]))
             content = "\n".join(new_lines)
             data_lines = new_lines
@@ -448,19 +434,17 @@ def cmd_classify(
 
     clf  = AccountClassifier()
     rows = []
-    skipped_records = 0
 
     for i, row in enumerate(csv.DictReader(io.StringIO(content), delimiter=delim), start=1):
         text = (row.get(c_desc) or "").strip() if c_desc else ""
         if not text:
+            # 摘要が見つからない場合は、行の全データを強引にマージ
             text = " ".join(v for v in row.values() if v and v.strip())
 
         raw_amt = (row.get(c_amount) or "0") if c_amount else "0"
         amount  = parse_amount(raw_amt)
 
-        if not text and amount == 0:
-            skipped_records += 1
-            continue
+        # ★ 0円判定でのスキップ処理を廃止。どんな行でも強制分類する。
 
         type_val = str(row.get(c_type, "")).strip().lower() if c_type else ""
         
@@ -492,8 +476,8 @@ def cmd_classify(
             writer.writerows(rows)
         print(f"\n  ✅ 分類完了 → {output_path} ({len(rows)}件)")
     else:
+        # 強制実行モードなので、通常はここに到達しません
         print(f"\n{'='*60}\n  ❌ エラー原因: 有効なデータ行が0件でした\n{'='*60}")
-        print(f"🔍 診断レポート:\n    ・認識された列名: {fieldnames}")
         sys.exit(1)
 
 
