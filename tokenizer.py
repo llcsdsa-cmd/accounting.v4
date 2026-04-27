@@ -1,5 +1,5 @@
 """
-tokenizer.py — 日本語テキスト分析モジュール
+tokenizer.py — 日本語テキスト分析モジュール（軽貨物ドライバー特化版）
 MeCabが使える環境では自動的にMeCabを使用し、
 使えない場合は正規表現ベースのトークナイザーにフォールバックする。
 """
@@ -25,8 +25,18 @@ def normalize(text: str) -> str:
 
 
 def tokenize_mecab(text: str) -> list[str]:
-    """MeCabで形態素解析 → 名詞・動詞・形容詞のみ抽出"""
+    """
+    MeCabで形態素解析 → 名詞・動詞・形容詞、および英数字を抽出
+    （英数字の連続が1文字ずつ分解されて消滅するバグを回避する修正済み）
+    """
     tokens = []
+    
+    # === 1. テキスト内の「英数字の連続」をそのまま救出 ===
+    # これにより ENEOS や ETC、30.5L などの消滅を防ぎます
+    english_words = re.findall(r'[a-zA-Z0-9]+', text)
+    tokens.extend([w.lower() for w in english_words if len(w) >= 2])
+    
+    # === 2. MeCabによる日本語の分解 ===
     node = _mecab.parseToNode(text)
     while node:
         feature = node.feature.split(",")
@@ -34,8 +44,15 @@ def tokenize_mecab(text: str) -> list[str]:
         if pos in ("名詞", "動詞", "形容詞") and node.surface:
             # 原形があれば原形、なければ表層形
             base = feature[6] if len(feature) > 6 and feature[6] != "*" else node.surface
+            
+            # 1文字のアルファベットはゴミになりやすいため除外
+            if re.match(r'^[a-zA-Z]$', base):
+                node = node.next
+                continue
+                
             tokens.append(base)
         node = node.next
+        
     return tokens
 
 
@@ -84,11 +101,6 @@ def tokens_to_string(tokens: list[str]) -> str:
 def extract_features(text: str) -> dict:
     """
     分類に有用な特徴量を辞書で返す
-    - tokens      : トークンリスト
-    - has_price   : 金額表現が含まれるか
-    - has_date    : 日付表現が含まれるか
-    - is_receipt  : レシート・領収書らしいか
-    - shop_type   : 店舗種別のヒント（推定）
     """
     text_n = normalize(text)
     tokens = tokenize(text)
@@ -105,6 +117,8 @@ def extract_features(text: str) -> dict:
 def _guess_shop_type(text: str) -> str:
     """テキストから店舗種別を推定するヒューリスティック"""
     patterns = [
+        # ★軽貨物ドライバー用に追加
+        (r'出光|エネオス|eneos|コスモ|キグナス|宇佐美|シェル|太陽石油',      "ガソリンスタンド"),
         (r'コンビニ|セブン|ローソン|ファミマ|ミニストップ',        "コンビニ"),
         (r'スーパー|イオン|ライフ|マルエツ|西友|業務スーパー',      "スーパー"),
         (r'駅|jr|suica|icoca|交通|バス|タクシー|電車',           "交通"),
