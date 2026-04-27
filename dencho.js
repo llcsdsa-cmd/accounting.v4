@@ -291,8 +291,8 @@ function openDenchoDetail(id) {
     ${entry ? `
     <div class="detail-section">
       <div class="detail-title">連携仕訳エントリ</div>
-      <div class="detail-row"><span>借方</span><strong>${entry.debit.account} ${fmt(entry.debit.amount)}</strong></div>
-      <div class="detail-row"><span>貸方</span><strong>${entry.credit.account} ${fmt(entry.credit.amount)}</strong></div>
+      <div class="detail-row"><span>借方 (支出・費用 / Debit)</span><strong>${entry.debit.account} ${fmt(entry.debit.amount)}</strong></div>
+      <div class="detail-row"><span>貸方 (収入・資産の減少 / Credit)</span><strong>${entry.credit.account} ${fmt(entry.credit.amount)}</strong></div>
     </div>` : ''}`;
 
   modal.style.display = 'flex';
