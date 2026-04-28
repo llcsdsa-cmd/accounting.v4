@@ -91,14 +91,23 @@
       </div>
     </div>
 
-    <div class="profit-card">
-      <div class="profit-icon-wrap" id="kpi-icon-profit"></div>
-      <div>
-        <div class="p-label">事業所得（概算）</div>
-        <div class="p-value" id="dash-profit">¥0</div>
-        <div class="p-sub" id="dash-profit-sub"></div>
+  <div class="profit-card">
+    <div class="profit-icon-wrap" id="kpi-icon-profit"></div>
+    <div>
+      <div class="p-label">
+        事業所得（概算）
+        <!-- ★追加：期間切り替えスイッチ -->
+        <select id="dashboard-period" onchange="updateDashboard()" style="margin-left:5px; font-size:11px; padding:1px; border:1px solid #ccc; border-radius:3px;">
+          <option value="year">通算</option>
+          <option value="month">当月</option>
+        </select>
       </div>
+      <div class="p-value" id="dash-profit">¥0</div>
+      <div class="p-sub" id="dash-profit-sub"></div>
     </div>
+  </div>
+
+    
 
     <div class="section-card">
       <div class="section-head">
