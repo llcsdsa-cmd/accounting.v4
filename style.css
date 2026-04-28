@@ -24,16 +24,39 @@
 }
 
 html, body {
-  margin: 0; padding: 0;
+  /* ▼ 重複を避けるため、外枠のパディングは 0 に戻します */
+  margin: 0; 
+  padding: 0; 
+
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font);
   font-size: 15px;
   line-height: 1.6;
+  
+  /* スクロールをスムーズにし、画面全体の溢れを防止 */
   overflow: hidden;
   height: 100%;
   width: 100%;
+  
+  /* ▼ ズームを防止し、パディング計算を正確にする設定 */
+  touch-action: manipulation; 
+  box-sizing: border-box;
 }
+
+/* すべての要素でパディング（内側の余白）が横幅に含まれるように統一 */
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* もし画面最下部にボタンやナビがある場合、この設定を追加すると 
+   iPhone 14 Pro Max のホームバーとの重なりを自動回避できます */
+#main-content {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+
+
 
 /* ===== ナビゲーション（上部固定） ===== */
 .nav-bar {
