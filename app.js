@@ -662,10 +662,8 @@ function renderAll() {
 
 //この辺りにあとで修正分入れるかも
 
+// cur?が悪さしているらしいので削除
 
-  
-  // アラートチェック
-  checkAlerts(cur.income, cur.expense);
 
   // 予算表示更新
   renderBudgetDisplay(cur.income, cur.expense);
