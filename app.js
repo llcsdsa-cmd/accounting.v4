@@ -587,6 +587,7 @@ function saveData() {
 
 
 // ===== ダッシュボード =====
+// ===== ダッシュボード更新（修正版） =====
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -601,27 +602,32 @@ function updateDashboard() {
   });
 
   // 2. 集計（calcSums を実行）
-  const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0, kasjiTotal:0, kasjiBiz:0, kasjiHome:0, taxSales10:0, taxReceived:0, taxPaid:0 };
+  // calcSums が未定義の場合のフォールバック付き
+  const cur = (typeof calcSums === 'function') 
+    ? calcSums(filtered) 
+    : { income: 0, expense: 0, kasjiTotal: 0, kasjiBiz: 0, kasjiHome: 0, taxSales10: 0, taxReceived: 0, taxPaid: 0 };
 
-  // ★重要：ここで確実に profit を定義する（これより下で使うため）
-  const profit = cur.income - cur.expense; 
+  // ★ 利益の計算（この関数内だけで有効な定数）
+  const profit = cur.income - cur.expense;
 
-  // 3. 数字の表示更新
+  // 3. 数字の表示更新用ヘルパー
   const setVal = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = (typeof fmt === 'function') ? fmt(val) : val;
   };
 
+  // メインの収支表示
   setVal('dash-income', cur.income);
   setVal('dash-expense', cur.expense);
   
   const profitEl = document.getElementById('dash-profit');
   if (profitEl) {
     profitEl.textContent = (typeof fmt === 'function') ? fmt(profit) : profit;
-    // ★利益の状態によって色を変える
+    // 利益の状態によって色を変える
     profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
   }
 
+  // 黒字・赤字ラベルの更新
   const subEl = document.getElementById('dash-profit-sub');
   if (subEl) {
     const label = (period === 'month') ? (now.getMonth() + 1) + '月分' : currentYear + '年 通算';
@@ -629,7 +635,7 @@ function updateDashboard() {
     subEl.textContent = `${label} (${status})`;
   }
 
-  // 残りの表示
+  // その他の集計表示（家事按分・消費税）
   setVal('按分-before', cur.kasjiTotal);
   setVal('按分-biz', cur.kasjiBiz);
   setVal('按分-home', cur.kasjiHome);
@@ -637,50 +643,38 @@ function updateDashboard() {
   setVal('dash-tax-received', cur.taxReceived);
   setVal('dash-tax-paid', cur.taxPaid);
 
-  // 4. グラフの更新
-  try {
-    if (typeof monthlyChart !== 'undefined' && monthlyChart && typeof renderDashboardCharts === 'function') {
-      renderDashboardCharts(filtered);
-    } else {
-      console.log("グラフの初期化待ちです...");
-    }
-  } catch (e) { }
-}
-
-// ===== 画面全体の更新（司令塔） =====
-function renderAll() {
-  updateDashboard();
-  if (typeof renderJournal === 'function') renderJournal();
-  if (typeof renderLedger === 'function') renderLedger();
-  if (typeof renderTax === 'function') renderTax();
-  if (typeof renderReport === 'function') renderReport();
-  if (typeof renderDencho === 'function') renderDencho();
-  if (typeof renderAssets === 'function') renderAssets();
-}
-
-
-
-//この辺りにあとで修正分入れるかも
-
-// cur?が悪さしているらしいので削除
-
-
-  // 予算表示更新
-  renderBudgetDisplay(cur.income, cur.expense);
-
-  // 最近の仕訳（5件）
-  const recent = [...entries].reverse().slice(0, 5);
-  const el = document.getElementById('recent-entries');
-  if (recent.length === 0) {
-    el.innerHTML = '<div class="empty-msg">仕訳がまだありません</div>';
-  } else {
-    el.innerHTML = recent.map(e => entryCard(e, true)).join('');
+  // 4. アラートチェック ＆ 予算表示
+  if (typeof checkAlerts === 'function') {
+    checkAlerts(cur.income, cur.expense);
+  }
+  if (typeof renderBudgetDisplay === 'function') {
+    renderBudgetDisplay(cur.income, cur.expense);
   }
 
-  // グラフ・カレンダー更新
-  renderCharts();
-  renderCalendar();
+  // 5. 最近の仕訳（5件）
+  const recentEl = document.getElementById('recent-entries');
+  if (recentEl) {
+    const recent = [...entries].reverse().slice(0, 5);
+    if (recent.length === 0) {
+      recentEl.innerHTML = '<div class="empty-msg">仕訳がまだありません</div>';
+    } else if (typeof entryCard === 'function') {
+      recentEl.innerHTML = recent.map(e => entryCard(e, true)).join('');
+    }
+  }
 
+  // 6. グラフとカレンダーの更新
+  if (typeof renderCharts === 'function') renderCharts();
+  if (typeof renderCalendar === 'function') renderCalendar();
+
+  // 7. ダッシュボード専用グラフエンジンの呼び出し（存在する場合）
+  try {
+    if (typeof renderDashboardCharts === 'function') {
+      renderDashboardCharts(filtered);
+    }
+  } catch (e) {
+    console.warn("Dashboard charts render failed:", e);
+  }
+} // ← ここで確実に終了！
 
 // ===== 予算管理 =====
 let budget = JSON.parse(localStorage.getItem('kaikei_budget') || '{"income":0,"expense":0}');
