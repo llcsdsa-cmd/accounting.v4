@@ -128,6 +128,7 @@ function renderAll() {
 }
 
 // ★ここ（renderAllのすぐ下）に新しく貼り付ける
+// ===== 固定資産台帳の描画（ボタン追加版） =====
 function renderAssets() {
   const container = document.getElementById('page-assets');
   if (!container) return;
@@ -165,14 +166,64 @@ function renderAssets() {
               <span class="highlight">未償却残高: ${fmt(a.remainingValue || a.price)}</span>
             </div>
           </div>
-          <div class="asset-status">
+          <div class="asset-status" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
              <span class="tag checked-tag">管理中</span>
+             <!-- ★追加：償却計算ボタン -->
+             <button class="add-btn" style="font-size: 10px; padding: 4px 8px;" onclick="calculateDepreciation('${a.id}')">
+               償却費を計算
+             </button>
           </div>
         </div>`;
     });
   }
   container.innerHTML = html;
 }
+
+// ===== 減価償却費の自動計算と仕訳登録 =====
+function calculateDepreciation(assetId) {
+  const asset = assets.find(a => a.id === assetId);
+  if (!asset) return;
+
+  // 定額法の簡易計算（取得価額 ÷ 耐用年数）
+  const yearlyDep = Math.floor(asset.price / asset.usefulLife);
+  
+  // 未償却残高がすでに1円（備忘価額）以下の場合は終了
+  const currentVal = asset.remainingValue || asset.price;
+  if (currentVal <= 1) {
+    alert("この資産はすでに償却が完了しています。");
+    return;
+  }
+
+  const msg = `今年の減価償却費（${fmt(yearlyDep)}）を計算し、仕訳帳に登録しますか？\n\n※12月31日付の仕訳として登録されます。`;
+  if (!confirm(msg)) return;
+
+  // 自動仕訳の作成（免税事業者向け：対象外設定）
+  const entry = {
+    id: 'dep_' + Date.now(),
+    date: new Date().getFullYear() + '-12-31', 
+    debit: { account: '減価償却費', sub: '', amount: yearlyDep, taxCode: 'non', taxAmount: 0 },
+    credit: { account: '車両運搬具', sub: '', amount: yearlyDep, taxCode: 'non', taxAmount: 0 },
+    memo: `自動計算：減価償却（${asset.name}）`,
+    manually_saved: true,
+    createdAt: Date.now()
+  };
+
+  // データの保存
+  entries.push(entry);
+  
+  // 資産側の「未償却残高」を更新（1円未満にならないよう調整）
+  let nextVal = currentVal - yearlyDep;
+  if (nextVal < 1) nextVal = 1; 
+  asset.remainingValue = nextVal;
+
+  // 全データを保存して画面を更新
+  localStorage.setItem('kaikei_assets', JSON.stringify(assets));
+  saveData(); // 仕訳帳側の保存
+  renderAll();
+  
+  showToast('減価償却費を計上し、仕訳帳に登録しました', 'success');
+}
+
 
 // ===== ナビゲーション =====
 function navigate(page) {
