@@ -406,6 +406,14 @@ function saveEntry() {
     }
   }
 
+  // 🚀 ★ここに追加！ 30万円以上の高額資産チェック
+  const totalAmount = parseFloat(document.getElementById('f-debit-amount').value) || 0;
+  if (totalAmount >= 300000 && debitAccount === '車両運搬具') {
+    const assetMsg = `【重要：固定資産の管理】\n30万円以上の「車両運搬具」として保存します。\n\nこの車両は単なる経費ではなく、数年に分けて「減価償却」を行う必要があります。保存後、固定資産台帳（今後作成予定）での管理を忘れないでくださいね！`;
+    alert(assetMsg);
+  }
+
+  
   const debitTaxCode = document.getElementById('f-debit-tax').value;
   const creditTaxCode = document.getElementById('f-credit-tax').value;
   const kasjiEnabled = document.getElementById('f-kasji-enabled').checked;
