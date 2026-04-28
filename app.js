@@ -598,7 +598,9 @@ function saveData() {
   });
 }
 
+
 // ===== ダッシュボード =====
+
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -613,23 +615,27 @@ function updateDashboard() {
     return e.date.startsWith(currentYear);
   });
 
-  // 2. 集計（calcSums を安全に実行）
+  // 2. 集計（calcSums を実行）
   const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0 };
 
-  // 3. 数字の表示更新（profit の定義を先に行う）
-  const profit = cur.income - cur.expense; // ★ここで定義するので 685行目のエラーが消えます
-  
+  // 3. 数字の表示更新
+  // ★ ここで「profit」を最初に計算して定義するのがポイントです！
+  const profit = cur.income - cur.expense; 
+
   const profitEl = document.getElementById('dash-profit');
   if (profitEl) {
     profitEl.textContent = (typeof fmt === 'function') ? fmt(profit) : profit;
+    // 利益の状態によって色を変える
     profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
   }
 
   const subEl = document.getElementById('dash-profit-sub');
   if (subEl) {
     const label = (period === 'month') ? (now.getMonth() + 1) + '月分' : currentYear + '年 通算';
-    subEl.textContent = `${label} (${profit >= 0 ? '黒字' : '赤字'})`;
+    const status = profit >= 0 ? '黒字' : '赤字';
+    subEl.textContent = `${label} (${status})`;
   }
+
 
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = (typeof fmt === 'function') ? fmt(val) : val; };
   setVal('dash-income', cur.income);
