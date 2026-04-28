@@ -99,13 +99,14 @@ def build_entry(row: dict, idx: int) -> dict | None:
         debit  = {"account": account,      "sub": "", "amount": amount, "taxCode": tax_code, "taxAmount": tax_amt}
         credit = {"account": BANK_ACCOUNT, "sub": "", "amount": amount, "taxCode": "non",    "taxAmount": 0}
 
-    return {
+return {
         "id":        entry_id,
         "date":      date,
         "debit":     debit,
         "credit":    credit,
         "memo":      description + "（CSV取込）",
         "kasji":     None,
+        "manually_saved": True,  # ★ここを追加（JS側で true として読み込まれます）
         "createdAt": int(datetime.now().timestamp() * 1000),
         "_meta": {
             "confidence":   confidence,
@@ -113,7 +114,6 @@ def build_entry(row: dict, idx: int) -> dict | None:
             "source":       "primpo_classifier",
         },
     }
-
 
 def convert(input_path: str, output_path: str):
     entries    = []
