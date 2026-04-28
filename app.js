@@ -660,19 +660,7 @@ function renderAll() {
 
 
 
-
-  
-  const statusText = profit >= 0 ? '黒字' : '赤字';
-  // 「4月分 (黒字)」のように表示されます
-  document.getElementById('dash-profit-sub').textContent = `${periodLabel} (${statusText})`;
-
-  // 家事按分と消費税の表示（これまで通り）
-  document.getElementById('按分-before').textContent = fmt(cur.kasjiTotal);
-  document.getElementById('按分-biz').textContent = fmt(cur.kasjiBiz);
-  document.getElementById('按分-home').textContent = fmt(cur.kasjiHome);
-  document.getElementById('dash-tax-sales10').textContent = fmt(cur.taxSales10);
-  document.getElementById('dash-tax-received').textContent = fmt(cur.taxReceived);
-  document.getElementById('dash-tax-paid').textContent = fmt(cur.taxPaid);
+//この辺りにあとで修正分入れるかも
 
 
   
