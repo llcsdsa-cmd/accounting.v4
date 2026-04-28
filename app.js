@@ -632,22 +632,39 @@ function updateDashboard() {
   function calcSums(list) {
     let income = 0, expense = 0, kasjiTotal = 0, kasjiBiz = 0, kasjiHome = 0;
     let taxSales10 = 0, taxReceived = 0, taxPaid = 0;
+
     list.forEach(e => {
+      // 科目タイプの取得
       const creditType = getAccountType(e.credit.account);
       const debitType = getAccountType(e.debit.account);
+
+      // --- 収入の集計 ---
       if (creditType === 'income') income += e.credit.amount;
+
+      // --- 支出（経費）の集計 ---
       if (debitType === 'expense') {
-        const expAmt = e.kasji ? e.kasji.bizAmount : e.debit.amount;
+        // 家事按分設定がある場合は事業分のみ、ない場合は全額を経費とする
+        const expAmt = (e.kasji && e.kasji.bizAmount !== undefined) ? e.kasji.bizAmount : e.debit.amount;
         expense += expAmt;
-        if (e.kasji) { kasjiTotal += e.debit.amount; kasjiBiz += e.kasji.bizAmount; kasjiHome += e.debit.amount - e.kasji.bizAmount; }
+
+        // 家事按分の統計用
+        if (e.kasji) {
+          kasjiTotal += e.debit.amount;
+          kasjiBiz += e.kasji.bizAmount;
+          kasjiHome += e.debit.amount - e.kasji.bizAmount;
+        }
       }
+
+      // --- 消費税の集計（変更なし） ---
       if (e.debit.taxCode === 'exempt10') { taxSales10 += e.debit.amount; taxReceived += e.debit.taxAmount; }
       if (e.credit.taxCode === 'exempt10') { taxSales10 += e.credit.amount; taxReceived += e.credit.taxAmount; }
       if (e.debit.taxCode === 'input10' || e.debit.taxCode === 'input8') taxPaid += e.debit.taxAmount;
       if (e.credit.taxCode === 'input10' || e.credit.taxCode === 'input8') taxPaid += e.credit.taxAmount;
     });
+    
     return { income, expense, kasjiTotal, kasjiBiz, kasjiHome, taxSales10, taxReceived, taxPaid };
   }
+
 
   const cur = calcSums(filtered);
   const prev = calcSums(prevFiltered);
