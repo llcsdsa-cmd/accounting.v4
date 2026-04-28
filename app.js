@@ -901,47 +901,50 @@ async function importPrimpoCSVWithDencho(file) {
   return new Promise((resolve) => {
     reader.onload = (e) => {
       const text = e.target.result;
-      const lines = text.split('\n');
+      // 改行で分割し、空行を除去
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
       let newEntries = [];
       
-      // 2行目（インデックス1）から処理開始
+      // i = 1 から始めることで、1行目の「日付,金額,内容」を確実にスキップ
       for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+        const line = lines[i];
         
-        // カンマで分割（ダブルクォーテーション等も考慮）
-        const c = line.split(',').map(s => s.replace(/"/g, '').trim());
+        // CSVのパース（カンマで分割）
+        // 内容にカンマが含まれる可能性を考慮した正規表現での分割
+        const c = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/"/g, '').trim());
         
-        // CSVの列構成に合わせて取得（0:日付, 1:金額, 2:内容）
-        const rawDate = c[0] || "";
-        const rawAmount = c[1] || "0";
+        if (c.length < 2) continue;
+
+        // testsample.csv の構造： 0:日付, 1:金額, 2:内容
+        const rawDate = c[0];
+        const rawAmount = c[1];
         const rawMemo = c[2] || "CSVインポート";
 
-        // 数値変換（カンマ除去）
-        const amount = parseFloat(rawAmount.replace(/,/g, '')) || 0;
+        // 数値変換の徹底（数値以外を除去）
+        const amount = parseInt(rawAmount.replace(/[^0-9.-]/g, ''), 10) || 0;
 
-        // 日付形式の変換 (2026/04/28 -> 2026-04-28)
+        // 日付の整形
         const formattedDate = rawDate.replace(/\//g, '-');
 
         const entry = {
           id: 'prm_' + Date.now() + i,
           date: formattedDate,
           debit: { 
-            account: '消耗品費', // 暫定で経費科目を入れておく（後で手修正）
+            account: '未確定勘定', 
             sub: '', 
             amount: amount, 
             taxCode: 'input10', 
-            taxAmount: Math.round(amount * 0.1 / 1.1) 
+            taxAmount: Math.round(amount * 10 / 110) 
           },
           credit: { 
-            account: '現金', // 貸方は「現金」をデフォルトに
+            account: '現金', 
             sub: '', 
             amount: amount, 
             taxCode: 'non', 
             taxAmount: 0 
           },
           memo: rawMemo,
-          manually_saved: false // 「済」タグを付けない（後で確認が必要なため）
+          manually_saved: false 
         };
         newEntries.push(entry);
       }
@@ -949,12 +952,13 @@ async function importPrimpoCSVWithDencho(file) {
       entries = [...entries, ...newEntries];
       saveData();
       renderAll();
-      showToast(`${newEntries.length}件取り込みました。科目を修正してください。`, 'success');
+      showToast(`${newEntries.length}件取り込みました。`, 'success');
       resolve();
     };
     reader.readAsText(file);
   });
 }
+
 // ===== データ初期化 (Danger Zone) =====
 function resetAllData() {
   if (!confirm('【警告】すべてのデータが削除されます。バックアップは取りましたか？')) return;
