@@ -115,19 +115,6 @@ function initIcons() {
   });
 }
 
-// 110行目あたり
-function renderAll() {
-  updateDashboard();
-  renderJournal();
-  renderLedger();
-  renderTax();
-  renderReport();
-  renderDencho();
-  renderSettingsPage();
-  renderAssets(); // ★ここから renderAssets を呼び出す
-}
-
-// ★ここ（renderAllのすぐ下）に新しく貼り付ける
 // ===== 固定資産台帳の描画（ボタン追加版） =====
 function renderAssets() {
   const container = document.getElementById('page-assets');
@@ -600,6 +587,7 @@ function saveData() {
 
 
 // ===== ダッシュボード =====
+// ===== ダッシュボード更新（重複とエラーを完全に排除） =====
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -616,10 +604,9 @@ function updateDashboard() {
   // 2. 集計（calcSums を実行）
   const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0, kasjiTotal:0, kasjiBiz:0, kasjiHome:0, taxSales10:0, taxReceived:0, taxPaid:0 };
 
-  // ★重要★ ここで profit を定義する（これ以降で使うため）
+  // 3. 数字の表示更新（ここで profit を定義）
   const profit = cur.income - cur.expense; 
 
-  // 3. 数字の表示更新
   const setVal = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = (typeof fmt === 'function') ? fmt(val) : val;
@@ -640,7 +627,7 @@ function updateDashboard() {
     subEl.textContent = `${label} (${profit >= 0 ? '黒字' : '赤字'})`;
   }
 
-  // 残りの按分・税金表示
+  // 残りの表示
   setVal('按分-before', cur.kasjiTotal);
   setVal('按分-biz', cur.kasjiBiz);
   setVal('按分-home', cur.kasjiHome);
@@ -648,16 +635,25 @@ function updateDashboard() {
   setVal('dash-tax-received', cur.taxReceived);
   setVal('dash-tax-paid', cur.taxPaid);
 
-  // 4. グラフの更新（安全策）
+  // 4. グラフの更新（エラー回避）
   try {
-    if (typeof monthlyChart !== 'undefined' && monthlyChart) {
-      if (typeof renderDashboardCharts === 'function') renderDashboardCharts(filtered);
-    } else {
-      console.log("グラフの初期化待ちです...");
+    if (typeof monthlyChart !== 'undefined' && monthlyChart && typeof renderDashboardCharts === 'function') {
+      renderDashboardCharts(filtered);
     }
   } catch (e) {
-    // エラーを無視して次に進ませる
+    // グラフエラーを無視して処理を続行させる
   }
+}
+
+// ===== 画面全体の更新（司令塔） =====
+function renderAll() {
+  updateDashboard();
+  if (typeof renderJournal === 'function') renderJournal();
+  if (typeof renderLedger === 'function') renderLedger();
+  if (typeof renderTax === 'function') renderTax();
+  if (typeof renderReport === 'function') renderReport();
+  if (typeof renderDencho === 'function') renderDencho();
+  if (typeof renderAssets === 'function') renderAssets();
 }
 
 
