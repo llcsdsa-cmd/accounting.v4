@@ -672,8 +672,23 @@ function updateDashboard() {
   const profit = cur.income - cur.expense;
   document.getElementById('dash-profit').textContent = fmt(profit);
   document.getElementById('dash-profit').style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
-  document.getElementById('dash-profit-sub').textContent = profit >= 0 ? '黒字' : '赤字';
 
+  // ★期間ラベルの作成（いつの集計かを表示する）
+  let periodLabel = '';
+  if (period === 'month') {
+    periodLabel = (now.getMonth() + 1) + '月分';
+  } else if (period === 'quarter') {
+    const q = Math.floor(now.getMonth() / 3) + 1;
+    periodLabel = `第${q}四半期`;
+  } else {
+    periodLabel = now.getFullYear() + '年 通算';
+  }
+  
+  const statusText = profit >= 0 ? '黒字' : '赤字';
+  // 「4月分 (黒字)」のように表示されます
+  document.getElementById('dash-profit-sub').textContent = `${periodLabel} (${statusText})`;
+
+  // 家事按分と消費税の表示（これまで通り）
   document.getElementById('按分-before').textContent = fmt(cur.kasjiTotal);
   document.getElementById('按分-biz').textContent = fmt(cur.kasjiBiz);
   document.getElementById('按分-home').textContent = fmt(cur.kasjiHome);
@@ -681,6 +696,8 @@ function updateDashboard() {
   document.getElementById('dash-tax-received').textContent = fmt(cur.taxReceived);
   document.getElementById('dash-tax-paid').textContent = fmt(cur.taxPaid);
 
+
+  
   // アラートチェック
   checkAlerts(cur.income, cur.expense);
 
