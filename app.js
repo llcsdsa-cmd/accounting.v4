@@ -587,7 +587,6 @@ function saveData() {
 
 
 // ===== ダッシュボード =====
-// ===== ダッシュボード更新（エラー根絶・完全版） =====
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -604,7 +603,7 @@ function updateDashboard() {
   // 2. 集計（calcSums を実行）
   const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0, kasjiTotal:0, kasjiBiz:0, kasjiHome:0, taxSales10:0, taxReceived:0, taxPaid:0 };
 
-  // ★重要：ここで profit を定義（これで 661行目などのエラーが消えます）
+  // ★重要：ここで確実に profit を定義する（これより下で使うため）
   const profit = cur.income - cur.expense; 
 
   // 3. 数字の表示更新
@@ -619,6 +618,7 @@ function updateDashboard() {
   const profitEl = document.getElementById('dash-profit');
   if (profitEl) {
     profitEl.textContent = (typeof fmt === 'function') ? fmt(profit) : profit;
+    // ★利益の状態によって色を変える
     profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
   }
 
@@ -629,7 +629,7 @@ function updateDashboard() {
     subEl.textContent = `${label} (${status})`;
   }
 
-  // 4. 残りの按分・税金表示
+  // 残りの表示
   setVal('按分-before', cur.kasjiTotal);
   setVal('按分-biz', cur.kasjiBiz);
   setVal('按分-home', cur.kasjiHome);
@@ -637,14 +637,14 @@ function updateDashboard() {
   setVal('dash-tax-received', cur.taxReceived);
   setVal('dash-tax-paid', cur.taxPaid);
 
-  // 5. グラフの更新（エラー回避）
+  // 4. グラフの更新
   try {
-    if (typeof renderDashboardCharts === 'function') {
+    if (typeof monthlyChart !== 'undefined' && monthlyChart && typeof renderDashboardCharts === 'function') {
       renderDashboardCharts(filtered);
+    } else {
+      console.log("グラフの初期化待ちです...");
     }
-  } catch (e) {
-    console.log("グラフの初期化待ちです...");
-  }
+  } catch (e) { }
 }
 
 // ===== 画面全体の更新（司令塔） =====
