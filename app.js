@@ -385,14 +385,19 @@ function saveEntry() {
   const expenseKeywords = [
     { kw: ['ガソリン', '給油', 'エネオス', '出光', 'レギュラー', '軽油'], acc: '燃料費' },
     { kw: ['高速', 'ネクスコ', '首都高', 'etc'], acc: '旅費交通費' },
-    { kw: ['タイムズ', 'リパーク', '駐車場', 'パーキング'], acc: '旅費交通費' },
+    // ★ 修正：月極が含まれる場合はここを通らないようにし、別途「地代家賃」ルールを作る
+    { kw: ['タイムズ', 'リパーク', '駐車場', 'パーキング'], acc: '旅費交通費', exclude: '月極' },
+    { kw: ['月極', '家賃', '地代'], acc: '地代家賃' }, // ★ 新設
     { kw: ['オイル', '洗車', 'タイヤ', '点検', '整備'], acc: '車両費' },
-    { kw: ['テープ', '梱包', '段ボール', '台車'], acc: '荷造運賃' }
+    { kw: ['テープ', '梱包', '段ボール', '台車'], acc: '荷造運賃' },
+    { kw: ['手数料', '振込', 'atm'], acc: '支払手数料' }
   ];
 
   for (const item of expenseKeywords) {
     const foundExpKw = item.kw.find(k => memoText.includes(k));
     if (foundExpKw) {
+      // ★ 「exclude（除外ワード）」が含まれている場合は無視する
+      if (item.exclude && memoText.includes(item.exclude)) continue;
       if (debitAccount !== item.acc && debitAccount !== '旅費交通費') {
         const msg = `【確認：支出の入力ミス？】\n内容に「${foundExpKw}」とありますが、上の段（出費・入金先）が「${item.acc}」になっていません。\n\n経費の支払いであれば：\n・上の段：${item.acc}（出費）\n・下の段：現金 または 普通預金（支払元）\nとするのが正解です。\n\nこのまま保存しますか？`;
         if (!confirm(msg)) return;
