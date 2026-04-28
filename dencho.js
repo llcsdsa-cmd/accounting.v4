@@ -440,20 +440,22 @@ async function importPrimpoCSVWithDencho(file) {
         let predictedAccount = "消耗品費";
         const text_n = desc.toLowerCase();
         
-        // ★ 「月極」判定を、普通の「駐車場」判定より先に書くのがコツです
-        if (text_n.includes('月極') || text_n.includes('家賃') || text_n.includes('地代')) {
+        // ★ 1. まず金額が10万円以上で「車」関連のキーワードがあるかを最優先でチェック
+        if (amount >= 100000 && (text_n.includes('車') || text_n.includes('カー') || text_n.includes('軽バン'))) {
+          predictedAccount = "車両運搬具";
+        }
+        // ★ 2. 通常のキーワード判定（金額に関わらず振り分け）
+        else if (text_n.includes('月極') || text_n.includes('家賃') || text_n.includes('地代')) {
           predictedAccount = "地代家賃";
-        } els if (text_n.includes('ガソリン') || text_n.includes('レギュラー') || text_n.includes('軽油') || text_n.includes('エネオス') || text_n.includes('出光')) {
+        } else if (text_n.includes('ガソリン') || text_n.includes('レギュラー') || text_n.includes('軽油') || text_n.includes('エネオス') || text_n.includes('出光')) {
           predictedAccount = "燃料費";
         } else if (text_n.includes('高速') || text_n.includes('ネクスコ') || text_n.includes('タイムズ') || text_n.includes('パーキング') || text_n.includes('etc')) {
           predictedAccount = "旅費交通費";
-        } else if (text_n.includes('洗車') || text_n.includes('オイル') || text_n.includes('タイヤ') || text_n.includes('オートバックス')) {
+        } else if (text_n.includes('洗車') || text_n.includes('オイル') || text_n.includes('タイヤ') || text_n.includes('オートバックス') || text_n.includes('イエローハット')) {
           predictedAccount = "車両費";
-        } else if (text_n.includes('台車') || text_n.includes('テープ') || text_n.includes('梱包')) {
+        } else if (text_n.includes('台車') || text_n.includes('テープ') || text_n.includes('梱包') || text_n.includes('ダンボール')) {
           predictedAccount = "荷造運賃";
-        } 
-        // ★ここを追加しました
-        else if (text_n.includes('手数料') || text_n.includes('振込') || text_n.includes('atm') || text_n.includes('システム利用') || text_n.includes('サービス料')) {
+        } else if (text_n.includes('手数料') || text_n.includes('振込') || text_n.includes('atm') || text_n.includes('システム利用') || text_n.includes('サービス料')) {
           predictedAccount = "支払手数料";
         }
         
