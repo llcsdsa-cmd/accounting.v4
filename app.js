@@ -911,7 +911,7 @@ function renderAll() {
       <span class="legend-val">${fmt(v)}</span>
     </div>`
   ).join('');
-}
+
 
 // ===== カレンダー =====
 let calYear = new Date().getFullYear();
