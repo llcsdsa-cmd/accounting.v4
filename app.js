@@ -25,9 +25,11 @@ function initIcons() {
     'nav-icon-ledger':       'ledger',
     'nav-icon-tax':          'tax',
     'nav-icon-dencho':       'dencho',
+    'nav-icon-assets':       'kasji', // ★この1行を追加：資産用のアイコンが表示されます
     'nav-icon-report':       'report',
     'nav-icon-settings-tab': 'settingsNav',
   };
+
   Object.entries(navMap).forEach(([id, name]) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = icon(name, 'nav-svg');
@@ -120,7 +122,9 @@ function renderAll() {
   renderReport();
   renderDencho();
   renderSettingsPage();
+  renderAssets(); // ★この1行を追加：資産ページを最新の状態に更新します
 }
+
 
 // ===== ナビゲーション =====
 function navigate(page) {
