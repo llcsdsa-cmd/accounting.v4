@@ -600,6 +600,7 @@ function saveData() {
 
 // ===== ダッシュボード =====
 
+// ===== ダッシュボード更新（エラー修正・完全版） =====
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -608,13 +609,13 @@ function updateDashboard() {
   const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
   const monthStr = `${currentYear}-${currentMonth}`;
 
-  // 今期のフィルタリング
+  // 1. 今期のフィルタリング
   let filtered = entries.filter(e => {
     if (period === 'month') return e.date.startsWith(monthStr);
     return e.date.startsWith(currentYear);
   });
 
-  // 前期間（比較用）のフィルタリング
+  // 2. 前期間（比較用）のフィルタリング
   let prevFiltered = entries.filter(e => {
     const d = new Date(e.date);
     if (period === 'month') {
@@ -622,108 +623,64 @@ function updateDashboard() {
       const py = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
       return d.getFullYear() === py && d.getMonth() === pm;
     }
-    if (period === 'quarter') {
-      const q = Math.floor(now.getMonth() / 3);
-      const pq = q === 0 ? 3 : q - 1;
-      const py = q === 0 ? now.getFullYear() - 1 : now.getFullYear();
-      return d.getFullYear() === py && Math.floor(d.getMonth() / 3) === pq;
-    }
     return d.getFullYear() === now.getFullYear() - 1;
   });
 
-  // ここから下の「const cur = calcSums(filtered);」以降に繋げます
+  // 3. 集計計算
+  const cur = typeof calcSums === 'function' ? calcSums(filtered) : { income: 0, expense: 0 };
+  const prev = typeof calcSums === 'function' ? calcSums(prevFiltered) : { income: 0, expense: 0 };
 
-
-  function calcSums(list) {
-    let income = 0, expense = 0, kasjiTotal = 0, kasjiBiz = 0, kasjiHome = 0;
-    let taxSales10 = 0, taxReceived = 0, taxPaid = 0;
-
-    list.forEach(e => {
-      // 科目タイプの取得
-      const creditType = getAccountType(e.credit.account);
-      const debitType = getAccountType(e.debit.account);
-
-      // --- 収入の集計 ---
-      if (creditType === 'income') income += e.credit.amount;
-
-      // --- 支出（経費）の集計 ---
-      if (debitType === 'expense') {
-        // 家事按分設定がある場合は事業分のみ、ない場合は全額を経費とする
-        const expAmt = (e.kasji && e.kasji.bizAmount !== undefined) ? e.kasji.bizAmount : e.debit.amount;
-        expense += expAmt;
-
-        // 家事按分の統計用
-        if (e.kasji) {
-          kasjiTotal += e.debit.amount;
-          kasjiBiz += e.kasji.bizAmount;
-          kasjiHome += e.debit.amount - e.kasji.bizAmount;
-        }
-      }
-
-      // --- 消費税の集計（変更なし） ---
-      if (e.debit.taxCode === 'exempt10') { taxSales10 += e.debit.amount; taxReceived += e.debit.taxAmount; }
-      if (e.credit.taxCode === 'exempt10') { taxSales10 += e.credit.amount; taxReceived += e.credit.taxAmount; }
-      if (e.debit.taxCode === 'input10' || e.debit.taxCode === 'input8') taxPaid += e.debit.taxAmount;
-      if (e.credit.taxCode === 'input10' || e.credit.taxCode === 'input8') taxPaid += e.credit.taxAmount;
-    });
-    
-    return { income, expense, kasjiTotal, kasjiBiz, kasjiHome, taxSales10, taxReceived, taxPaid };
-  }
-  const cur = calcSums(filtered);
-  const prev = calcSums(prevFiltered);
-
-  // 1. 収入・支出の数字を更新
-  document.getElementById('dash-income').textContent = fmt(cur.income);
-  document.getElementById('dash-expense').textContent = fmt(cur.expense);
-
-  // 2. 前期比（▲▼%）の表示更新
-  function deltaHtml(cur, prev, reverseColor = false) {
-    if (prev === 0) return '';
-    const diff = cur - prev;
-    const pct = Math.round(diff / prev * 100);
-    const up = diff >= 0;
-    const positive = reverseColor ? !up : up;
-    const sign = up ? '▲' : '▼';
-    const cls = positive ? 'delta-up' : 'delta-down';
-    return `<span class="s-delta ${cls}">${sign} ${Math.abs(pct)}%</span>`;
-  }
-  document.getElementById('dash-income-delta').innerHTML = deltaHtml(cur.income, prev.income);
-  document.getElementById('dash-expense-delta').innerHTML = deltaHtml(cur.expense, prev.expense, true);
-
-  // 3. 利益（事業所得）の計算と色付け
-  const profit = cur.income - cur.expense;
+  // 4. 数字の表示
+  const incEl = document.getElementById('dash-income');
+  const expEl = document.getElementById('dash-expense');
   const profitEl = document.getElementById('dash-profit');
-  profitEl.textContent = fmt(profit);
-  // 赤字なら赤(#b03a2e)、黒字なら緑(#1a7a5e)
-  profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
+  const subEl = document.getElementById('dash-profit-sub');
 
-  // 4. 期間ラベルの作成
-  let periodLabel = '';
-  if (period === 'month') {
-    periodLabel = (now.getMonth() + 1) + '月分';
-  } else if (period === 'quarter') {
-    const q = Math.floor(now.getMonth() / 3) + 1;
-    periodLabel = `第${q}四半期`;
-  } else {
-    periodLabel = now.getFullYear() + '年 通算';
+  if (incEl) incEl.textContent = fmt(cur.income);
+  if (expEl) expEl.textContent = fmt(cur.expense);
+
+  const profit = cur.income - cur.expense;
+  if (profitEl) {
+    profitEl.textContent = fmt(profit);
+    profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
   }
-  
-  const statusText = profit >= 0 ? '黒字' : '赤字';
-  document.getElementById('dash-profit-sub').textContent = `${periodLabel} (${statusText})`;
 
-  // 5. 家事按分・消費税の表示更新
-  document.getElementById('按分-before').textContent = fmt(cur.kasjiTotal);
-  document.getElementById('按分-biz').textContent = fmt(cur.kasjiBiz);
-  document.getElementById('按分-home').textContent = fmt(cur.kasjiHome);
-  document.getElementById('dash-tax-sales10').textContent = fmt(cur.taxSales10);
-  document.getElementById('dash-tax-received').textContent = fmt(cur.taxReceived);
-  document.getElementById('dash-tax-paid').textContent = fmt(cur.taxPaid);
-
-  // 6. グラフの更新
-  if (typeof renderDashboardCharts === 'function') {
-    renderDashboardCharts(filtered);
+  // 5. ラベルの更新（「4月分」固定を解除）
+  if (subEl) {
+    const periodLabel = (period === 'month') ? (now.getMonth() + 1) + '月分' : currentYear + '年 通算';
+    const statusText = profit >= 0 ? '黒字' : '赤字';
+    subEl.textContent = `${periodLabel} (${statusText})`;
   }
-} // 👈 この閉じカッコを忘れずに！
+
+  // 6. 前期比（デルタ）の表示
+  const deltaHtml = (curVal, prevVal, reverse = false) => {
+    if (!prevVal || prevVal === 0) return '';
+    const diff = curVal - prevVal;
+    const pct = Math.round(diff / prevVal * 100);
+    const up = diff >= 0;
+    const positive = reverse ? !up : up;
+    const cls = positive ? 'delta-up' : 'delta-down';
+    return `<span class="s-delta ${cls}">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
+  };
+
+  const incD = document.getElementById('dash-income-delta');
+  const expD = document.getElementById('dash-expense-delta');
+  if (incD) incD.innerHTML = deltaHtml(cur.income, prev.income);
+  if (expD) expD.innerHTML = deltaHtml(cur.expense, prev.expense, true);
+
+  // 7. その他按分・消費税
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = fmt(val); };
+  setTxt('按分-before', cur.kasjiTotal);
+  setTxt('按分-biz', cur.kasjiBiz);
+  setTxt('按分-home', cur.kasjiHome);
+  setTxt('dash-tax-sales10', cur.taxSales10);
+  setTxt('dash-tax-received', cur.taxReceived);
+  setTxt('dash-tax-paid', cur.taxPaid);
+
+  // 8. グラフ再描画
+  if (typeof renderDashboardCharts === 'function') renderDashboardCharts(filtered);
+}
+
 
 
   
