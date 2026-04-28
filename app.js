@@ -587,27 +587,27 @@ function saveData() {
 
 
 // ===== ダッシュボード =====
-// ===== ダッシュボード更新（エラー根絶版） =====
+// ===== ダッシュボード更新（エラー根絶・完全版） =====
 function updateDashboard() {
-  // 1. スイッチから値を取得
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
   const now = new Date();
   const currentYear = now.getFullYear().toString();
   const monthStr = `${currentYear}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-  // 2. データの集計
+  // 1. データのフィルタリング
   let filtered = entries.filter(e => {
     if (period === 'month') return e.date.startsWith(monthStr);
     return e.date.startsWith(currentYear);
   });
 
+  // 2. 集計（calcSums を実行）
   const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0, kasjiTotal:0, kasjiBiz:0, kasjiHome:0, taxSales10:0, taxReceived:0, taxPaid:0 };
 
-  // ★重要：ここで profit を定義する（これで ReferenceError が消えます）
+  // ★重要：ここで profit を定義（これで 661行目などのエラーが消えます）
   const profit = cur.income - cur.expense; 
 
-  // 3. 画面の数字を更新
+  // 3. 数字の表示更新
   const setVal = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = (typeof fmt === 'function') ? fmt(val) : val;
@@ -629,7 +629,7 @@ function updateDashboard() {
     subEl.textContent = `${label} (${status})`;
   }
 
-  // 4. 残りの表示
+  // 4. 残りの按分・税金表示
   setVal('按分-before', cur.kasjiTotal);
   setVal('按分-biz', cur.kasjiBiz);
   setVal('按分-home', cur.kasjiHome);
@@ -637,10 +637,14 @@ function updateDashboard() {
   setVal('dash-tax-received', cur.taxReceived);
   setVal('dash-tax-paid', cur.taxPaid);
 
-  // 5. グラフの更新
+  // 5. グラフの更新（エラー回避）
   try {
-    if (typeof renderDashboardCharts === 'function') renderDashboardCharts(filtered);
-  } catch (e) { }
+    if (typeof renderDashboardCharts === 'function') {
+      renderDashboardCharts(filtered);
+    }
+  } catch (e) {
+    console.log("グラフの初期化待ちです...");
+  }
 }
 
 // ===== 画面全体の更新（司令塔） =====
