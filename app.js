@@ -666,11 +666,10 @@ function updateDashboard() {
     if (expD) expD.innerHTML = deltaHtml(cur.expense, prev.expense, true);
   }
 
-  // 7. グラフの更新（確実に描画関数を呼び出す）
+  // 7. グラフの更新
   if (typeof renderDashboardCharts === 'function') {
-    renderDashboardCharts(filtered);
-  } else if (typeof updateDashboardCharts === 'function') {
-    updateDashboardCharts(filtered);
+    // 括弧の中を空にして、関数そのものを呼び出す
+    renderDashboardCharts(); 
   } else if (typeof renderCharts === 'function') {
     renderCharts();
   }
