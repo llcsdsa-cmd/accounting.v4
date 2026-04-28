@@ -108,8 +108,11 @@ function getAccountByCode(code) {
   return getAllAccounts().find(a => a.code === code);
 }
 
-// 科目タイプ判定
+// 科目タイプ判定（「減価償却費」を絶対に見逃さない版）
 function getAccountType(name) {
+  // ★ 強制判定：名前が「減価償却費」なら、リストを探す前に支出と判定
+  if (name === '減価償却費') return 'expense';
+
   const acc = getAccountByName(name);
   return acc ? acc.type : 'unknown';
 }
