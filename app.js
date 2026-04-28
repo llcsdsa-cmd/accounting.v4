@@ -904,19 +904,44 @@ async function importPrimpoCSVWithDencho(file) {
       const lines = text.split('\n');
       let newEntries = [];
       
+      // 2行目（インデックス1）から処理開始
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        const c = line.split(',').map(s => s.replace(/"/g, ''));
         
-        // PRiMPO形式: 日付, 借方, 借方金額, 貸方, 貸方金額, 摘要...
+        // カンマで分割（ダブルクォーテーション等も考慮）
+        const c = line.split(',').map(s => s.replace(/"/g, '').trim());
+        
+        // CSVの列構成に合わせて取得（0:日付, 1:金額, 2:内容）
+        const rawDate = c[0] || "";
+        const rawAmount = c[1] || "0";
+        const rawMemo = c[2] || "CSVインポート";
+
+        // 数値変換（カンマ除去）
+        const amount = parseFloat(rawAmount.replace(/,/g, '')) || 0;
+
+        // 日付形式の変換 (2026/04/28 -> 2026-04-28)
+        const formattedDate = rawDate.replace(/\//g, '-');
+
         const entry = {
           id: 'prm_' + Date.now() + i,
-          date: c[0].replace(/\//g, '-'),
-          debit: { account: c[1], sub: '', amount: parseFloat(c[2]), taxCode: 'input10', taxAmount: 0 },
-          credit: { account: c[3], sub: '', amount: parseFloat(c[4]), taxCode: 'exempt10', taxAmount: 0 },
-          memo: c[5] || '',
-          manually_saved: false // インポート直後は「未確認」状態
+          date: formattedDate,
+          debit: { 
+            account: '消耗品費', // 暫定で経費科目を入れておく（後で手修正）
+            sub: '', 
+            amount: amount, 
+            taxCode: 'input10', 
+            taxAmount: Math.round(amount * 0.1 / 1.1) 
+          },
+          credit: { 
+            account: '現金', // 貸方は「現金」をデフォルトに
+            sub: '', 
+            amount: amount, 
+            taxCode: 'non', 
+            taxAmount: 0 
+          },
+          memo: rawMemo,
+          manually_saved: false // 「済」タグを付けない（後で確認が必要なため）
         };
         newEntries.push(entry);
       }
@@ -924,13 +949,12 @@ async function importPrimpoCSVWithDencho(file) {
       entries = [...entries, ...newEntries];
       saveData();
       renderAll();
-      showToast(`${newEntries.length}件取り込みました。仕訳帳で内容を確認してください。`, 'success');
+      showToast(`${newEntries.length}件取り込みました。科目を修正してください。`, 'success');
       resolve();
     };
     reader.readAsText(file);
   });
 }
-
 // ===== データ初期化 (Danger Zone) =====
 function resetAllData() {
   if (!confirm('【警告】すべてのデータが削除されます。バックアップは取りましたか？')) return;
