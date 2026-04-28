@@ -669,15 +669,14 @@ function updateDashboard() {
     
     return { income, expense, kasjiTotal, kasjiBiz, kasjiHome, taxSales10, taxReceived, taxPaid };
   }
-
-
   const cur = calcSums(filtered);
   const prev = calcSums(prevFiltered);
 
+  // 1. 収入・支出の数字を更新
   document.getElementById('dash-income').textContent = fmt(cur.income);
   document.getElementById('dash-expense').textContent = fmt(cur.expense);
 
-  // 前期比デルタ
+  // 2. 前期比（▲▼%）の表示更新
   function deltaHtml(cur, prev, reverseColor = false) {
     if (prev === 0) return '';
     const diff = cur - prev;
@@ -691,11 +690,14 @@ function updateDashboard() {
   document.getElementById('dash-income-delta').innerHTML = deltaHtml(cur.income, prev.income);
   document.getElementById('dash-expense-delta').innerHTML = deltaHtml(cur.expense, prev.expense, true);
 
+  // 3. 利益（事業所得）の計算と色付け
   const profit = cur.income - cur.expense;
-  document.getElementById('dash-profit').textContent = fmt(profit);
-  document.getElementById('dash-profit').style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
+  const profitEl = document.getElementById('dash-profit');
+  profitEl.textContent = fmt(profit);
+  // 赤字なら赤(#b03a2e)、黒字なら緑(#1a7a5e)
+  profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
 
-  // ★期間ラベルの作成（いつの集計かを表示する）
+  // 4. 期間ラベルの作成
   let periodLabel = '';
   if (period === 'month') {
     periodLabel = (now.getMonth() + 1) + '月分';
@@ -705,6 +707,25 @@ function updateDashboard() {
   } else {
     periodLabel = now.getFullYear() + '年 通算';
   }
+  
+  const statusText = profit >= 0 ? '黒字' : '赤字';
+  document.getElementById('dash-profit-sub').textContent = `${periodLabel} (${statusText})`;
+
+  // 5. 家事按分・消費税の表示更新
+  document.getElementById('按分-before').textContent = fmt(cur.kasjiTotal);
+  document.getElementById('按分-biz').textContent = fmt(cur.kasjiBiz);
+  document.getElementById('按分-home').textContent = fmt(cur.kasjiHome);
+  document.getElementById('dash-tax-sales10').textContent = fmt(cur.taxSales10);
+  document.getElementById('dash-tax-received').textContent = fmt(cur.taxReceived);
+  document.getElementById('dash-tax-paid').textContent = fmt(cur.taxPaid);
+
+  // 6. グラフの更新
+  if (typeof renderDashboardCharts === 'function') {
+    renderDashboardCharts(filtered);
+  }
+} // 👈 この閉じカッコを忘れずに！
+
+
   
   const statusText = profit >= 0 ? '黒字' : '赤字';
   // 「4月分 (黒字)」のように表示されます
