@@ -599,18 +599,32 @@ function saveData() {
 }
 
 // ===== ダッシュボード =====
+
 function updateDashboard() {
-  const period = document.getElementById('period-select').value;
+  const periodEl = document.getElementById('period-select');
+  const period = periodEl ? periodEl.value : 'year';
   const now = new Date();
+  
+  // 今月を判定するための文字列（例: "2026-04"）
+  const currentYear = now.getFullYear().toString();
+  const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+  const monthStr = `${currentYear}-${currentMonth}`;
+
   let filtered = entries.filter(e => {
-    const d = new Date(e.date);
-    if (period === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    // 「当月」なら、日付が今月の文字列で始まるものだけ
+    if (period === 'month') {
+      return e.date.startsWith(monthStr);
+    }
+    // 「四半期」なら、今の3ヶ月間（とりあえず今のロジックを維持）
     if (period === 'quarter') {
+      const d = new Date(e.date);
       const q = Math.floor(now.getMonth() / 3);
       return d.getFullYear() === now.getFullYear() && Math.floor(d.getMonth() / 3) === q;
     }
-    return d.getFullYear() === now.getFullYear();
+    // 「通算」なら、今年のデータすべて（これで12月の減価償却費が入ります！）
+    return e.date.startsWith(currentYear);
   });
+
 
   // 前期間（比較用）
   let prevFiltered = entries.filter(e => {
