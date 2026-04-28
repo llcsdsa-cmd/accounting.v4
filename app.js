@@ -115,6 +115,7 @@ function initIcons() {
   });
 }
 
+// 110行目あたり
 function renderAll() {
   updateDashboard();
   renderJournal();
@@ -123,9 +124,55 @@ function renderAll() {
   renderReport();
   renderDencho();
   renderSettingsPage();
-  renderAssets(); // ★この1行を追加：資産ページを最新の状態に更新します
+  renderAssets(); // ★ここから renderAssets を呼び出す
 }
 
+// ★ここ（renderAllのすぐ下）に新しく貼り付ける
+function renderAssets() {
+  const container = document.getElementById('page-assets');
+  if (!container) return;
+
+  const totalAssetPrice = assets.reduce((sum, a) => sum + a.price, 0);
+
+  let html = `
+    <div class="page-header">
+      <h1 class="page-title">固定資産台帳</h1>
+    </div>
+    <div class="section-card">
+      <div class="asset-summary">
+        💰 資産合計: ${fmt(totalAssetPrice)}
+      </div>
+    </div>
+  `;
+
+  if (assets.length === 0) {
+    html += `
+      <div class="section-card">
+        <div class="empty-msg">対象となる30万円以上の資産はありません。</div>
+      </div>`;
+  } else {
+    assets.forEach(a => {
+      html += `
+        <div class="section-card asset-card">
+          <div class="asset-info">
+            <div class="asset-name"><strong>${a.name}</strong></div>
+            <div class="asset-details">
+              <span>取得日: ${a.date}</span> | 
+              <span>取得価額: ${fmt(a.price)}</span>
+            </div>
+            <div class="asset-dep">
+              <span>耐用年数: ${a.usefulLife}年</span> | 
+              <span class="highlight">未償却残高: ${fmt(a.remainingValue || a.price)}</span>
+            </div>
+          </div>
+          <div class="asset-status">
+             <span class="tag checked-tag">管理中</span>
+          </div>
+        </div>`;
+    });
+  }
+  container.innerHTML = html;
+}
 
 // ===== ナビゲーション =====
 function navigate(page) {
