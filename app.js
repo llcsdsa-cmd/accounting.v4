@@ -767,6 +767,25 @@ function clearDenchoSearch() {
   if (typeof renderDenchoSearch === 'function') renderDenchoSearch();
 }
 
+// ===== 消費税設定の読み込み（エラー解消用） =====
+function loadTaxSettings() {
+  const savedTax = localStorage.getItem('kaikei_tax');
+  if (savedTax) {
+    taxSettings = JSON.parse(savedTax);
+  }
+  
+  // 画面の入力フィールドに値を反映（要素が存在する場合のみ）
+  const methodEl = document.getElementById('tax-method');
+  const industryEl = document.getElementById('tax-industry');
+  
+  if (methodEl) methodEl.value = taxSettings.method;
+  if (industryEl) industryEl.value = taxSettings.industry;
+  
+  // 簡易課税の表示切り替え
+  const row = document.getElementById('tax-rate-row');
+  if (row) row.style.display = taxSettings.method === 'simple' ? 'flex' : 'none';
+}
+
 // ===== 消費税設定の保存 =====
 function saveTaxSettings() {
   taxSettings.method = document.getElementById('tax-method').value;
