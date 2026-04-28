@@ -601,56 +601,20 @@ function saveData() {
 // ===== ダッシュボード =====
 
 function updateDashboard() {
-  // 1. スイッチの状態を確実に取得
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
-  
   const now = new Date();
   const currentYear = now.getFullYear().toString();
   const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
   const monthStr = `${currentYear}-${currentMonth}`;
 
-  // 2. 期間に合わせて仕訳をフィルタリング
+  // 今期のフィルタリング
   let filtered = entries.filter(e => {
-    if (period === 'month') {
-      return e.date.startsWith(monthStr); // 「当月」なら今月（4月）のみ
-    }
-    // 「通算」なら今年（2026年）のすべてのデータを対象にする
-    // これで12月の減価償却費も計算に含まれます！
+    if (period === 'month') return e.date.startsWith(monthStr);
     return e.date.startsWith(currentYear);
   });
 
-  // 3. 集計（calcSums を呼び出し）
-  const cur = calcSums(filtered);
-
-  // 4. 利益の計算と色の設定
-  const profit = cur.income - cur.expense;
-  const profitEl = document.getElementById('dash-profit');
-  
-  profitEl.textContent = fmt(profit);
-  // ★ 赤字なら赤、黒字なら緑に色を変える
-  profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
-
-  // ★ 期間ラベルを動的に書き換える（ここが「4月分」固定を直すキモです！）
-  let periodLabel = '';
-  if (period === 'month') {
-    periodLabel = (now.getMonth() + 1) + '月分';
-  } else if (period === 'quarter') {
-    const q = Math.floor(now.getMonth() / 3) + 1;
-    periodLabel = `第${q}四半期`;
-  } else {
-    periodLabel = currentYear + '年 通算';
-  }
-  
-  const statusText = profit >= 0 ? '黒字' : '赤字';
-  document.getElementById('dash-profit-sub').textContent = `${periodLabel} (${statusText})`;
-
-  // 5. 収入・支出の数字も更新
-  document.getElementById('dash-income').textContent = fmt(cur.income);
-  document.getElementById('dash-expense').textContent = fmt(cur.expense);
-
-
-  // 前期間（比較用）
+  // 前期間（比較用）のフィルタリング
   let prevFiltered = entries.filter(e => {
     const d = new Date(e.date);
     if (period === 'month') {
@@ -666,6 +630,9 @@ function updateDashboard() {
     }
     return d.getFullYear() === now.getFullYear() - 1;
   });
+
+  // ここから下の「const cur = calcSums(filtered);」以降に繋げます
+
 
   function calcSums(list) {
     let income = 0, expense = 0, kasjiTotal = 0, kasjiBiz = 0, kasjiHome = 0;
