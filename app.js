@@ -716,7 +716,7 @@ function updateDashboard() {
   // グラフ・カレンダー更新
   renderCharts();
   renderCalendar();
-}
+
 
 // ===== 予算管理 =====
 let budget = JSON.parse(localStorage.getItem('kaikei_budget') || '{"income":0,"expense":0}');
