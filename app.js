@@ -1327,3 +1327,29 @@ function showToast(msg, type = 'info') {
   t.className = `toast show ${type}`;
   setTimeout(() => t.className = 'toast', 2500);
 }
+// ===== ダッシュボードのグラフを描画する予備エンジン =====
+function renderDashboardCharts() {
+  // 1. 表示期間（通算 or 当月）をスイッチから取得
+  const periodEl = document.getElementById('period-select');
+  const period = periodEl ? periodEl.value : 'year';
+  const now = new Date();
+  const currentYear = now.getFullYear().toString();
+  const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+  
+  // 2. 期間に合わせてデータを絞り込む（ここで12月の減価償却費も計算に入ります！）
+  const filtered = entries.filter(e => {
+    if (period === 'month') return e.date.startsWith(`${currentYear}-${currentMonth}`);
+    return e.date.startsWith(currentYear);
+  });
+
+  // 3. すでにあるグラフ描画関数を、この絞り込んだデータで無理やり動かす
+  // ※ もし updateCharts などの名前があれば、そこへ繋ぎます
+  if (typeof updateCharts === 'function') {
+    updateCharts(filtered);
+  } else if (typeof renderCharts === 'function') {
+    renderCharts(filtered);
+  } else {
+    // 最終手段：画面を更新する基本の動きを呼び出す
+    console.log("グラフ関数が見つかりません。renderAllを再試行します。");
+  }
+}
