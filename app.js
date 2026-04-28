@@ -600,55 +600,63 @@ function saveData() {
 
 
 // ===== ダッシュボード =====
-
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
   const now = new Date();
   const currentYear = now.getFullYear().toString();
-  const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
-  const monthStr = `${currentYear}-${currentMonth}`;
+  const monthStr = `${currentYear}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-  // 1. 今期のフィルタリング
+  // 1. データのフィルタリング
   let filtered = entries.filter(e => {
     if (period === 'month') return e.date.startsWith(monthStr);
     return e.date.startsWith(currentYear);
   });
 
   // 2. 集計（calcSums を実行）
-  const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0 };
+  const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0, kasjiTotal:0, kasjiBiz:0, kasjiHome:0, taxSales10:0, taxReceived:0, taxPaid:0 };
 
-  // 3. 数字の表示更新
-  // ★ ここで「profit」を最初に計算して定義するのがポイントです！
+  // ★重要★ ここで profit を定義する（これ以降で使うため）
   const profit = cur.income - cur.expense; 
 
+  // 3. 数字の表示更新
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (typeof fmt === 'function') ? fmt(val) : val;
+  };
+
+  setVal('dash-income', cur.income);
+  setVal('dash-expense', cur.expense);
+  
   const profitEl = document.getElementById('dash-profit');
   if (profitEl) {
     profitEl.textContent = (typeof fmt === 'function') ? fmt(profit) : profit;
-    // 利益の状態によって色を変える
     profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
   }
 
   const subEl = document.getElementById('dash-profit-sub');
   if (subEl) {
     const label = (period === 'month') ? (now.getMonth() + 1) + '月分' : currentYear + '年 通算';
-    const status = profit >= 0 ? '黒字' : '赤字';
-    subEl.textContent = `${label} (${status})`;
+    subEl.textContent = `${label} (${profit >= 0 ? '黒字' : '赤字'})`;
   }
 
+  // 残りの按分・税金表示
+  setVal('按分-before', cur.kasjiTotal);
+  setVal('按分-biz', cur.kasjiBiz);
+  setVal('按分-home', cur.kasjiHome);
+  setVal('dash-tax-sales10', cur.taxSales10);
+  setVal('dash-tax-received', cur.taxReceived);
+  setVal('dash-tax-paid', cur.taxPaid);
 
-  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = (typeof fmt === 'function') ? fmt(val) : val; };
-  setVal('dash-income', cur.income);
-  setVal('dash-expense', cur.expense);
-
-  // 4. グラフの更新（★ここを安全な書き方に変えました：836行目のエラー対策）
+  // 4. グラフの更新（安全策）
   try {
-    // グラフの変数が存在し、かつ中身がある時だけ更新を実行する
     if (typeof monthlyChart !== 'undefined' && monthlyChart) {
       if (typeof renderDashboardCharts === 'function') renderDashboardCharts(filtered);
+    } else {
+      console.log("グラフの初期化待ちです...");
     }
   } catch (e) {
-    console.log("グラフの初期化待ちです...");
+    // エラーを無視して次に進ませる
   }
 }
 
