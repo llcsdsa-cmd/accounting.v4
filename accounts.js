@@ -13,6 +13,7 @@ const ACCOUNTS = {
       { code: '140', name: '仮払消費税', type: 'asset' },
       { code: '150', name: '棚卸資産', type: 'asset' },
       { code: '160', name: '有形固定資産', type: 'asset' },
+      { code: '1601', name: '車両運搬具', type: 'asset' }, // ★追加：車両そのもの
       { code: '161', name: '減価償却累計額', type: 'asset' },
       { code: '170', name: '敷金・保証金', type: 'asset' },
     ]
@@ -56,30 +57,31 @@ const ACCOUNTS = {
     label: '費用',
     normal: 'debit',
     items: [
+// 軽貨物ドライバー特化の科目を体系的に整理しました
       { code: '500', name: '仕入高', type: 'expense' },
       { code: '510', name: '給料賃金', type: 'expense' },
       { code: '511', name: '外注工賃', type: 'expense' },
-      { code: '512', name: '減価償却費', type: 'expense' },
+      { code: '512', name: '減価償却費', type: 'expense' },  // 毎年の償却分
       { code: '513', name: '貸倒金', type: 'expense' },
-      { code: '520', name: '地代家賃', type: 'expense' },  // 家事按分対象
-      { code: '521', name: '水道光熱費', type: 'expense' }, // 家事按分対象
-      { code: '522', name: '通信費', type: 'expense' },     // 家事按分対象
+      { code: '520', name: '地代家賃', type: 'expense' },
+      { code: '521', name: '水道光熱費', type: 'expense' },
+      { code: '522', name: '通信費', type: 'expense' },
       { code: '523', name: '消耗品費', type: 'expense' },
       { code: '524', name: '旅費交通費', type: 'expense' },
-      { code: '5241', name: '燃料費', type: 'expense' },    // ★追加
-      { code: '5242', name: '車両費', type: 'expense' },    // ★追加
-      { code: '5243', name: '荷造運賃', type: 'expense' },  // ★追加
+      { code: '5241', name: '燃料費', type: 'expense' },     // ガソリン・軽油
+      { code: '5242', name: '車両費', type: 'expense' },     // オイル・洗車・修理
+      { code: '5243', name: '荷造運賃', type: 'expense' },   // 梱包・テープ・台車
       { code: '525', name: '接待交際費', type: 'expense' },
-      { code: '5251', name: '支払手数料', type: 'expense' }, // ★ここに追加！
+      { code: '5251', name: '支払手数料', type: 'expense' },  // ATM・振込手数料
       { code: '526', name: '広告宣伝費', type: 'expense' },
-      { code: '527', name: '損害保険料', type: 'expense' }, // 家事按分対象
+      { code: '527', name: '損害保険料', type: 'expense' },
       { code: '528', name: '修繕費', type: 'expense' },
       { code: '529', name: '福利厚生費', type: 'expense' },
       { code: '530', name: '利子割引料', type: 'expense' },
       { code: '531', name: '地代家賃（家事按分）', type: 'expense' },
       { code: '540', name: '租税公課', type: 'expense' },
       { code: '550', name: '雑費', type: 'expense' },
-
+      
     ]
   }
 };
