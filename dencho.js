@@ -440,7 +440,10 @@ async function importPrimpoCSVWithDencho(file) {
         let predictedAccount = "消耗品費";
         const text_n = desc.toLowerCase();
         
-        if (text_n.includes('ガソリン') || text_n.includes('レギュラー') || text_n.includes('軽油') || text_n.includes('エネオス') || text_n.includes('出光')) {
+        // ★ 「月極」判定を、普通の「駐車場」判定より先に書くのがコツです
+        if (text_n.includes('月極') || text_n.includes('家賃') || text_n.includes('地代')) {
+          predictedAccount = "地代家賃";
+        } els if (text_n.includes('ガソリン') || text_n.includes('レギュラー') || text_n.includes('軽油') || text_n.includes('エネオス') || text_n.includes('出光')) {
           predictedAccount = "燃料費";
         } else if (text_n.includes('高速') || text_n.includes('ネクスコ') || text_n.includes('タイムズ') || text_n.includes('パーキング') || text_n.includes('etc')) {
           predictedAccount = "旅費交通費";
