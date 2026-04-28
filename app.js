@@ -681,6 +681,7 @@ let budget = JSON.parse(localStorage.getItem('kaikei_budget') || '{"income":0,"e
 
 function toggleBudgetEdit() {
   const edit = document.getElementById('budget-edit');
+  if (!edit) return;
   const isOpen = edit.style.display !== 'none';
   if (!isOpen) {
     document.getElementById('budget-income').value = budget.income || '';
@@ -694,12 +695,13 @@ function saveBudget() {
   budget.expense = parseFloat(document.getElementById('budget-expense').value) || 0;
   localStorage.setItem('kaikei_budget', JSON.stringify(budget));
   document.getElementById('budget-edit').style.display = 'none';
-  updateDashboard();
+  if (typeof updateDashboard === 'function') updateDashboard();
   showToast('予算を保存しました', 'success');
 }
 
 function renderBudgetDisplay(income, expense) {
   const el = document.getElementById('budget-display');
+  if (!el) return;
   if (!budget.income && !budget.expense) {
     el.innerHTML = '<div class="budget-empty">予算未設定 — 右の「編集」から設定できます</div>';
     return;
@@ -736,6 +738,7 @@ function checkAlerts(income, expense) {
     alerts.push({ type: 'warn', msg: `収入が目標の50%を下回っています` });
   }
   const banner = document.getElementById('alert-banner');
+  if (!banner) return;
   if (alerts.length === 0) { banner.style.display = 'none'; return; }
   banner.style.display = 'block';
   banner.innerHTML = alerts.map(a =>
@@ -762,8 +765,10 @@ function initChartYearSelect() {
 
 function switchCatTab(mode) {
   catTabMode = mode;
-  document.getElementById('cat-tab-expense').classList.toggle('active', mode === 'expense');
-  document.getElementById('cat-tab-income').classList.toggle('active', mode === 'income');
+  const tExp = document.getElementById('cat-tab-expense');
+  const tInc = document.getElementById('cat-tab-income');
+  if (tExp) tExp.classList.toggle('active', mode === 'expense');
+  if (tInc) tInc.classList.toggle('active', mode === 'income');
   renderCharts();
 }
 
@@ -776,8 +781,7 @@ function renderMonthlyChart() {
   const yearEl = document.getElementById('chart-year');
   if (!yearEl) return;
   const year = parseInt(yearEl.value) || new Date().getFullYear();
-  const months = Array.from({ length: 12 }, (_, i) => i);
-  const labels = months.map(m => `${m + 1}月`);
+  const labels = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
   const incomeData = new Array(12).fill(0);
   const expenseData = new Array(12).fill(0);
 
@@ -792,7 +796,7 @@ function renderMonthlyChart() {
   });
 
   const ctx = document.getElementById('monthly-chart');
-  if (!ctx) return;
+  if (!ctx || typeof Chart === 'undefined') return;
   if (monthlyChart) monthlyChart.destroy();
   monthlyChart = new Chart(ctx, {
     type: 'bar',
@@ -822,8 +826,8 @@ function renderMonthlyChart() {
 }
 
 function renderCategoryChart() {
-  const now = new Date();
-  const year = parseInt((document.getElementById('chart-year') || {}).value) || now.getFullYear();
+  const yearEl = document.getElementById('chart-year');
+  const year = parseInt(yearEl ? yearEl.value : new Date().getFullYear()) || new Date().getFullYear();
   const catMap = {};
 
   entries.forEach(e => {
@@ -848,11 +852,12 @@ function renderCategoryChart() {
   const COLORS = ['#3d4a6b','#1a7a5e','#b03a2e','#8b6914','#2a5aad','#6b3d7a','#2a7a8b','#7a6b3d'];
 
   const ctx = document.getElementById('category-chart');
-  if (!ctx) return;
+  const leg = document.getElementById('category-legend');
+  if (!ctx || typeof Chart === 'undefined') return;
   if (categoryChart) categoryChart.destroy();
 
   if (data.length === 0) {
-    document.getElementById('category-legend').innerHTML = '<div class="empty-msg">データがありません</div>';
+    if (leg) leg.innerHTML = '<div class="empty-msg">データがありません</div>';
     return;
   }
 
@@ -871,6 +876,31 @@ function renderCategoryChart() {
       }
     }
   });
+
+  if (leg) {
+    const total = data.reduce((s, v) => s + v, 0);
+    leg.innerHTML = sorted.map(([k, v], i) =>
+      `<div class="legend-row">
+        <span class="legend-dot" style="background:${COLORS[i]}"></span>
+        <span class="legend-name">${k}</span>
+        <span class="legend-pct">${Math.round(v / total * 100)}%</span>
+        <span class="legend-val">${fmt(v)}</span>
+      </div>`
+    ).join('');
+  }
+}
+
+// ===== 画面更新司令塔 (renderAll) =====
+// これをここに配置することで renderAll is not defined エラーを解消します
+function renderAll() {
+  if (typeof updateDashboard === 'function') updateDashboard();
+  if (typeof renderJournal === 'function') renderJournal();
+  if (typeof renderLedger === 'function') renderLedger();
+  if (typeof renderTax === 'function') renderTax();
+  if (typeof renderReport === 'function') renderReport();
+  if (typeof renderAssets === 'function') renderAssets();
+  if (typeof renderDenchoSearch === 'function') renderDenchoSearch();
+}
 
   const total = data.reduce((s, v) => s + v, 0);
   document.getElementById('category-legend').innerHTML = sorted.map(([k, v], i) =>
