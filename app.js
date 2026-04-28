@@ -600,7 +600,6 @@ function saveData() {
 
 // ===== ダッシュボード =====
 
-// ===== ダッシュボード更新（エラー修正・完全版） =====
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -609,7 +608,7 @@ function updateDashboard() {
   const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
   const monthStr = `${currentYear}-${currentMonth}`;
 
-  // 1. 今期のフィルタリング
+  // 1. 今期のフィルタリング（通算 or 当月）
   let filtered = entries.filter(e => {
     if (period === 'month') return e.date.startsWith(monthStr);
     return e.date.startsWith(currentYear);
@@ -626,58 +625,48 @@ function updateDashboard() {
     return d.getFullYear() === now.getFullYear() - 1;
   });
 
-  // 3. 集計計算
-  const cur = typeof calcSums === 'function' ? calcSums(filtered) : { income: 0, expense: 0 };
-  const prev = typeof calcSums === 'function' ? calcSums(prevFiltered) : { income: 0, expense: 0 };
+  // 3. 集計計算（NaN対策：計算に失敗したら0を返すようにガード）
+  const cur = (typeof calcSums === 'function') ? calcSums(filtered) : { income:0, expense:0, kasjiTotal:0, kasjiBiz:0, kasjiHome:0, taxSales10:0, taxReceived:0, taxPaid:0 };
+  const prev = (typeof calcSums === 'function') ? calcSums(prevFiltered) : { income:0, expense:0 };
 
-  // 4. 数字の表示
-  const incEl = document.getElementById('dash-income');
-  const expEl = document.getElementById('dash-expense');
-  const profitEl = document.getElementById('dash-profit');
-  const subEl = document.getElementById('dash-profit-sub');
-
-  if (incEl) incEl.textContent = fmt(cur.income);
-  if (expEl) expEl.textContent = fmt(cur.expense);
-
-  const profit = cur.income - cur.expense;
-  if (profitEl) {
-    profitEl.textContent = fmt(profit);
-    profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
-  }
-
-  // 5. ラベルの更新（「4月分」固定を解除）
-  if (subEl) {
-    const periodLabel = (period === 'month') ? (now.getMonth() + 1) + '月分' : currentYear + '年 通算';
-    const statusText = profit >= 0 ? '黒字' : '赤字';
-    subEl.textContent = `${periodLabel} (${statusText})`;
-  }
-
-  // 6. 前期比（デルタ）の表示
-  const deltaHtml = (curVal, prevVal, reverse = false) => {
-    if (!prevVal || prevVal === 0) return '';
-    const diff = curVal - prevVal;
-    const pct = Math.round(diff / prevVal * 100);
-    const up = diff >= 0;
-    const positive = reverse ? !up : up;
-    const cls = positive ? 'delta-up' : 'delta-down';
-    return `<span class="s-delta ${cls}">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
+  // 4. 数字の表示更新（ここから画面を書き換え）
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = fmt(val || 0); // 数字がなければ 0 を表示して NaN を防ぐ
   };
 
-  const incD = document.getElementById('dash-income-delta');
-  const expD = document.getElementById('dash-expense-delta');
-  if (incD) incD.innerHTML = deltaHtml(cur.income, prev.income);
-  if (expD) expD.innerHTML = deltaHtml(cur.expense, prev.expense, true);
+  setVal('dash-income', cur.income);
+  setVal('dash-expense', cur.expense);
+  setVal('dash-profit', cur.income - cur.expense);
 
-  // 7. その他按分・消費税
-  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = fmt(val); };
-  setTxt('按分-before', cur.kasjiTotal);
-  setTxt('按分-biz', cur.kasjiBiz);
-  setTxt('按分-home', cur.kasjiHome);
-  setTxt('dash-tax-sales10', cur.taxSales10);
-  setTxt('dash-tax-received', cur.taxReceived);
-  setTxt('dash-tax-paid', cur.taxPaid);
+  // 利益の色とラベルの更新
+  const profit = cur.income - cur.expense;
+  const profitEl = document.getElementById('dash-profit');
+  if (profitEl) profitEl.style.color = profit >= 0 ? '#1a7a5e' : '#b03a2e';
 
-  // 8. グラフ再描画
+  const subEl = document.getElementById('dash-profit-sub');
+  if (subEl) {
+    const label = (period === 'month') ? (now.getMonth() + 1) + '月分' : currentYear + '年 通算';
+    subEl.textContent = `${label} (${profit >= 0 ? '黒字' : '赤字'})`;
+  }
+
+  // 5. 画像で NaN になっていた部分の修正
+  setVal('按分-before', cur.kasjiTotal);
+  setVal('按分-biz', cur.kasjiBiz);
+  setVal('按分-home', cur.kasjiHome);
+  setVal('dash-tax-sales10', cur.taxSales10);
+  setVal('dash-tax-received', cur.taxReceived);
+  setVal('dash-tax-paid', cur.taxPaid);
+
+  // 6. 前期比の更新（もし deltaHtml 関数が下にあればそのまま動きます）
+  if (typeof deltaHtml === 'function') {
+    const incD = document.getElementById('dash-income-delta');
+    const expD = document.getElementById('dash-expense-delta');
+    if (incD) incD.innerHTML = deltaHtml(cur.income, prev.income);
+    if (expD) expD.innerHTML = deltaHtml(cur.expense, prev.expense, true);
+  }
+
+  // 7. グラフの更新
   if (typeof renderDashboardCharts === 'function') renderDashboardCharts(filtered);
 }
 
