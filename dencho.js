@@ -448,8 +448,12 @@ async function importPrimpoCSVWithDencho(file) {
           predictedAccount = "車両費";
         } else if (text_n.includes('台車') || text_n.includes('テープ') || text_n.includes('梱包')) {
           predictedAccount = "荷造運賃";
+        } 
+        // ★ここを追加しました
+        else if (text_n.includes('手数料') || text_n.includes('振込') || text_n.includes('atm') || text_n.includes('システム利用') || text_n.includes('サービス料')) {
+          predictedAccount = "支払手数料";
         }
-
+        
         const entry = {
           id: Date.now().toString() + '_' + i,
           date,
