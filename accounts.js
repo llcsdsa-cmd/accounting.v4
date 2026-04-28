@@ -70,6 +70,7 @@ const ACCOUNTS = {
       { code: '5242', name: '車両費', type: 'expense' },    // ★追加
       { code: '5243', name: '荷造運賃', type: 'expense' },  // ★追加
       { code: '525', name: '接待交際費', type: 'expense' },
+      { code: '5251', name: '支払手数料', type: 'expense' }, // ★ここに追加！
       { code: '526', name: '広告宣伝費', type: 'expense' },
       { code: '527', name: '損害保険料', type: 'expense' }, // 家事按分対象
       { code: '528', name: '修繕費', type: 'expense' },
