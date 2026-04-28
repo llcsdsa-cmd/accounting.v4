@@ -34,6 +34,11 @@
       <span class="tab-icon-svg" id="nav-icon-dencho"></span>
       <span class="tab-label">電帳法</span>
     </button>
+    <!-- 電帳法のあとに挿入 -->
+    <button class="nav-tab" data-page="assets" onclick="navigate('assets')">
+      <span class="tab-icon-svg" id="nav-icon-assets"></span>
+      <span class="tab-label">資産</span>
+    </button>
     <button class="nav-tab" data-page="report" onclick="navigate('report')">
       <span class="tab-icon-svg" id="nav-icon-report"></span>
       <span class="tab-label">決算</span>
@@ -369,6 +374,20 @@
     </div>
   </div>
 
+  <!-- 資産管理ページ -->
+  <div id="page-assets" class="page">
+    <div class="page-header">
+      <h1 class="page-title">固定資産台帳</h1>
+    </div>
+    <div class="section-card">
+      <div class="empty-msg">
+        30万円以上の資産（車両など）がここに表示されます。<br>
+        現在、減価償却の自動計算機能を準備中です。
+      </div>
+    </div>
+  </div>
+
+  
   <!-- 決算 -->
   <div class="page" id="page-report">
     <div class="page-header">
