@@ -1,5 +1,6 @@
 // ===== 状態管理 =====
 let entries = JSON.parse(localStorage.getItem('kaikei_entries') || '[]');
+let assets = JSON.parse(localStorage.getItem('kaikei_assets') || '[]'); // ★この1行を追加
 let taxSettings = JSON.parse(localStorage.getItem('kaikei_tax') || '{"method":"exempt","industry":"0.5"}');
 let currentPage = 'dashboard';
 
@@ -410,11 +411,30 @@ function saveEntry() {
     }
   }
 
-  // 🚀 ★ここに追加！ 30万円以上の高額資産チェック
+  // 🚀 ★高額資産チェック ＆ 資産台帳への自動登録
   const totalAmount = parseFloat(document.getElementById('f-debit-amount').value) || 0;
   if (totalAmount >= 300000 && debitAccount === '車両運搬具') {
-    const assetMsg = `【重要：固定資産の管理】\n30万円以上の「車両運搬具」として保存します。\n\nこの車両は単なる経費ではなく、数年に分けて「減価償却」を行う必要があります。保存後、固定資産台帳（今後作成予定）での管理を忘れないでくださいね！`;
+    const assetMsg = `【重要：固定資産の登録】\n30万円以上の資産（車両運搬具）として保存します。\n\n「資産」タブの固定資産台帳にも自動で記録されました。後ほど耐用年数（償却期間）などを確認してください。`;
     alert(assetMsg);
+
+    // ★資産リスト（固定資産台帳用）にデータをコピーする
+    const newAsset = {
+      id: 'ast_' + Date.now(),
+      entryId: document.getElementById('edit-id').value || Date.now().toString(),
+      name: document.getElementById('f-memo').value || '車両運搬具',
+      price: totalAmount,
+      date: document.getElementById('f-date').value,
+      usefulLife: 4, // 軽自動車の法定耐用年数（デフォルト4年）
+      remainingValue: totalAmount, // 未償却残高（初期値は購入額）
+    };
+    
+    // 同じ仕訳からの重複登録を防ぐ
+    const existAstIdx = assets.findIndex(a => a.entryId === newAsset.entryId);
+    if (existAstIdx >= 0) assets[existAstIdx] = newAsset;
+    else assets.push(newAsset);
+    
+    // ブラウザに資産データを保存
+    localStorage.setItem('kaikei_assets', JSON.stringify(assets));
   }
 
   
