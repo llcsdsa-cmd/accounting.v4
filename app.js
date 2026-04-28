@@ -666,8 +666,18 @@ function updateDashboard() {
     if (expD) expD.innerHTML = deltaHtml(cur.expense, prev.expense, true);
   }
 
-  // 7. グラフの更新
-  if (typeof renderDashboardCharts === 'function') renderDashboardCharts(filtered);
+  // 7. グラフの更新（確実に描画関数を呼び出す）
+  if (typeof renderDashboardCharts === 'function') {
+    renderDashboardCharts(filtered);
+  } else if (typeof updateDashboardCharts === 'function') {
+    updateDashboardCharts(filtered);
+  } else if (typeof renderCharts === 'function') {
+    renderCharts();
+  }
+
+  // 最後に、以前作成した「資産合計」などの表示も崩れないよう renderAssets も呼んでおきます
+  if (typeof renderAssets === 'function') renderAssets();
+
 }
 
 
