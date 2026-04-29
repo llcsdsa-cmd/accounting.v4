@@ -242,7 +242,7 @@ function renderBackupSettings() {
 }
 
 // ========================================================
-// 関数：データ管理画面（設定）の描画 - 永遠の監視テスト
+// 関数：データ管理画面（設定）の描画（アイコン失踪問題・完全解決版）
 // ========================================================
 function renderDataManagement() {
   const el = document.getElementById('data-management-body');
@@ -256,7 +256,7 @@ function renderDataManagement() {
     budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
   }).length;
 
-  // --- HTML構造の生成 ---
+  // 1. HTML構造の生成（アイコン用の枠をID指定で準備）
   el.innerHTML = `
     <div class="data-stat-row">
       <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
@@ -265,12 +265,12 @@ function renderDataManagement() {
     </div>
     <div class="data-actions" style="display: flex; flex-direction: column; gap: 10px;">
       <button class="export-btn" onclick="exportFullBackup()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
-        <span id="exp-icon-backup" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
+        <span id="final-icon-backup" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
         <span>全データ書き出し（JSON）</span>
       </button>
       
       <button class="export-btn" onclick="document.getElementById('restore-file').click()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
-        <span id="exp-icon-restore" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
+        <span id="final-icon-restore" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
         <span>バックアップから復元</span>
       </button>
       
@@ -281,34 +281,24 @@ function renderDataManagement() {
       </button>
     </div>`;
 
-  // --- 永遠の監視テスト（犯人が諦めるまで入れ続ける） ---
-  const starMonitor = setInterval(() => {
-    const bIcon = document.getElementById('exp-icon-backup');
+  // 2. 本物のアイコンを注入（一度だけでOK）
+  // 描画後、DOMが安定するのをわずかに待ってから実行します
+  setTimeout(() => {
+    const bIcon = document.getElementById('final-icon-backup');
+    const rIcon = document.getElementById('final-icon-restore');
     
-    // もしボタン自体がDOMから消えていたら、ページが切り替わったと判断して終了
-    if (!bIcon) {
-        console.log('Button element gone. Stopping monitor.');
-        clearInterval(starMonitor);
-        return;
+    // app.js の干渉を止めたので、この1回きりの注入でもう消えません
+    if (bIcon && typeof icon === 'function') {
+      bIcon.innerHTML = icon('backupIcon', 'btn-svg');
+    }
+    if (rIcon && typeof icon === 'function') {
+      rIcon.innerHTML = icon('restore', 'btn-svg');
     }
     
-    // バックアップアイコン枠が空なら再注入
-    if (bIcon.innerHTML === "") { 
-      bIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
-      console.log('Star re-injected (Endless Mode)');
-    }
-    
-    // 復元アイコン枠もチェック
-    const rIcon = document.getElementById('exp-icon-restore');
-    if (rIcon && rIcon.innerHTML === "") {
-      rIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
-    }
-  }, 100); 
-  // --- 監視終了 ---
+    console.log('Icon restoration complete. The long battle has ended!');
+  }, 50); 
 
 } // end function renderDataManagement
-// ========================================================
-
 
 
 
