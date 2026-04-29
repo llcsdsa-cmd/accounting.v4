@@ -65,7 +65,7 @@ function navigate(page) {
 // ==========================================
 }
 
-// ===== ダッシュボード =====
+// ===== ダッシュボード（アイコン再注入ガードレール付き） =====
 function updateDashboard() {
   const periodEl = document.getElementById('period-select');
   const period = periodEl ? periodEl.value : 'year';
@@ -133,7 +133,19 @@ function updateDashboard() {
   } catch (e) {
     console.warn("Dashboard charts render failed:", e);
   }
+
+  // --- [追加分] アイコン再注入ガードレール ---
+  // 他の描画処理と競合しないよう、わずかに遅延させて確実にアイコンを流し込みます
+  setTimeout(() => {
+    const dashImportIcon = document.getElementById('import-svg-icon');
+    if (dashImportIcon && typeof icon === 'function') {
+      // 以前表示されていたインポート用アイコン（'import'）を注入
+      dashImportIcon.innerHTML = icon('import', 'import-svg');
+      console.log('Dashboard import icon restored.');
+    }
+  }, 50);
 }
+// ===== ダッシュボード（アイコン再注入ガードレール付き）終わり =====
 
 // ===== 仕訳保存（キーワード診断・資産登録付） =====
 function saveEntry() {
