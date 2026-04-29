@@ -241,6 +241,9 @@ function renderBackupSettings() {
     </button>`;
 }
 
+// ========================================================
+// 関数：データ管理画面（設定）の描画
+// ========================================================
 function renderDataManagement() {
   const el = document.getElementById('data-management-body');
   if (!el) return;
@@ -253,7 +256,7 @@ function renderDataManagement() {
     budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
   }).length;
 
-  // HTML構造の生成
+  // --- HTML構造の生成 ---
   el.innerHTML = `
     <div class="data-stat-row">
       <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
@@ -265,31 +268,48 @@ function renderDataManagement() {
         <span id="exp-icon-backup" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
         <span>全データ書き出し（JSON）</span>
       </button>
+      
       <button class="export-btn" onclick="document.getElementById('restore-file').click()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
         <span id="exp-icon-restore" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
         <span>バックアップから復元</span>
       </button>
+      
       <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreFromFile(event)">
+      
       <button class="export-btn danger-btn" onclick="confirmClearData()" style="min-height: 44px;">
         データを全削除
       </button>
     </div>`;
 
-  // 0.5秒待ってから赤い星を注入するテスト
-  setTimeout(() => {
+  // --- 監視モード開始：他の処理に消されても「星」を再注入し続ける ---
+  let attempts = 0;
+  const starMonitor = setInterval(() => {
     const bIcon = document.getElementById('exp-icon-backup');
     const rIcon = document.getElementById('exp-icon-restore');
     
-    if (bIcon) {
-      bIcon.innerHTML = '<b style="color:red; font-size:20px; display:inline-block;">★</b>';
+    // バックアップアイコン枠のチェック
+    if (bIcon && bIcon.innerHTML === "") { 
+      bIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
+      console.log('Star re-injected (Backup)');
     }
-    if (rIcon) {
-      rIcon.innerHTML = '<b style="color:red; font-size:20px; display:inline-block;">★</b>';
+    
+    // 復元アイコン枠のチェック
+    if (rIcon && rIcon.innerHTML === "") {
+      rIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
+      console.log('Star re-injected (Restore)');
     }
-    console.log('Unique function test: Star injected');
-  }, 500);
-}
 
+    attempts++;
+    // 30回（約3秒間）チェックしたら監視を終了する
+    if (attempts > 30) {
+      clearInterval(starMonitor);
+      console.log('Monitor ended.');
+    }
+  }, 100); // 0.1秒ごとにチェック
+  // --- 監視モード終了 ---
+
+} // end function renderDataManagement
+// ========================================================
 
 
 
