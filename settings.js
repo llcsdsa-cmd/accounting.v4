@@ -253,27 +253,32 @@ function renderDataManagement() {
     budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
   }).length;
 
-  // 1. まずHTML構造を生成（この瞬間、古い要素は消えて新しい要素が作られます）
+  // 1. HTML構造を生成（アイコン用の枠を確実に確保）
   el.innerHTML = `
     <div class="data-stat-row">
       <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
       <div class="data-stat"><span class="ds-num">${(dSize / 1024).toFixed(1)}KB</span><span class="ds-label">データサイズ</span></div>
       <div class="data-stat"><span class="ds-num">${(dencho || []).length}</span><span class="ds-label">電帳法記録</span></div>
     </div>
-    <div class="data-actions">
-      <button class="export-btn" onclick="exportFullBackup()">
-        <span class="export-btn-icon" id="exp-icon-backup"></span>全データ書き出し（JSON）
+    <div class="data-actions" style="display: flex; flex-direction: column; gap: 10px;">
+      <button class="export-btn" onclick="exportFullBackup()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
+        <span id="exp-icon-backup" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
+        <span>全データ書き出し（JSON）</span>
       </button>
-      <button class="export-btn" onclick="document.getElementById('restore-file').click()">
-        <span class="export-btn-icon" id="exp-icon-restore"></span>バックアップから復元
+      
+      <button class="export-btn" onclick="document.getElementById('restore-file').click()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
+        <span id="exp-icon-restore" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
+        <span>バックアップから復元</span>
       </button>
+      
       <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreFromFile(event)">
-      <button class="export-btn danger-btn" onclick="confirmClearData()">
+      
+      <button class="export-btn danger-btn" onclick="confirmClearData()" style="min-height: 44px;">
         データを全削除
       </button>
     </div>`;
 
- // 2. ブラウザがHTMLを描画し終えるのを「0.1秒」待ってから、JSで直接スタイルを叩き込む
+  // 2. JSでアイコンを流し込み、スタイルを強制固定する
   setTimeout(() => {
     if (typeof icon === 'function') {
       const bIcon = el.querySelector('#exp-icon-backup');
@@ -281,12 +286,11 @@ function renderDataManagement() {
       
       if (bIcon) {
         bIcon.innerHTML = icon('export', 'exp-svg');
-        // --- 強制スタイル適用：CSSが効かなくてもこれで見えるはず ---
         const svg = bIcon.querySelector('svg');
         if (svg) {
           svg.style.width = '24px';
           svg.style.height = '24px';
-          svg.style.display = 'inline-block';
+          svg.style.display = 'block';
           svg.style.visibility = 'visible';
           svg.style.opacity = '1';
         }
@@ -294,18 +298,16 @@ function renderDataManagement() {
 
       if (rIcon) {
         rIcon.innerHTML = icon('import', 'exp-svg');
-        // --- 強制スタイル適用 ---
         const svg = rIcon.querySelector('svg');
         if (svg) {
           svg.style.width = '24px';
           svg.style.height = '24px';
-          svg.style.display = 'inline-block';
+          svg.style.display = 'block';
           svg.style.visibility = 'visible';
           svg.style.opacity = '1';
         }
       }
-      
-      console.log('Icons forced by JS'); // これがコンソールに出れば注入成功です
+      console.log('Final Layout Fix Applied'); 
     }
   }, 100);
 }
