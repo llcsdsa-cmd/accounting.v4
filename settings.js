@@ -244,13 +244,21 @@ function renderBackupSettings() {
 function renderDataManagement() {
   const el = document.getElementById('data-management-body');
   if (!el) return;
+
   const total = (entries || []).length;
-  const dSize = JSON.stringify({ entries, taxSettings, dencho, budget: JSON.parse(localStorage.getItem('kaikei_budget')||'{}') }).length;
+  const dSize = JSON.stringify({ 
+    entries, 
+    taxSettings, 
+    dencho, 
+    budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
+  }).length;
+
+  // 1. まずHTML構造を流し込む
   el.innerHTML = `
     <div class="data-stat-row">
       <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
-      <div class="data-stat"><span class="ds-num">${(dSize/1024).toFixed(1)}KB</span><span class="ds-label">データサイズ</span></div>
-      <div class="data-stat"><span class="ds-num">${(dencho||[]).length}</span><span class="ds-label">電帳法記録</span></div>
+      <div class="data-stat"><span class="ds-num">${(dSize / 1024).toFixed(1)}KB</span><span class="ds-label">データサイズ</span></div>
+      <div class="data-stat"><span class="ds-num">${(dencho || []).length}</span><span class="ds-label">電帳法記録</span></div>
     </div>
     <div class="data-actions">
       <button class="export-btn" onclick="exportFullBackup()">
@@ -264,11 +272,18 @@ function renderDataManagement() {
         データを全削除
       </button>
     </div>`;
-  // アイコン注入
-  const bIcon = document.getElementById('exp-icon-backup');
-  if (bIcon) bIcon.innerHTML = icon('export', 'exp-svg');
-  const rIcon = document.getElementById('exp-icon-restore');
-  if (rIcon) rIcon.innerHTML = icon('import', 'exp-svg');
+
+  // 2. HTMLを流し込んだ「直後」に、elの中から要素を探してアイコンを注入する
+  // 念のため、icon関数がグローバルに存在するかチェックを挟んでいます
+  if (typeof icon === 'function') {
+    const bIcon = el.querySelector('#exp-icon-backup');
+    if (bIcon) bIcon.innerHTML = icon('export', 'exp-svg');
+
+    const rIcon = el.querySelector('#exp-icon-restore');
+    if (rIcon) rIcon.innerHTML = icon('import', 'exp-svg');
+  } else {
+    console.warn('icon関数が見つかりません。icons.jsが正しく読み込まれているか確認してください。');
+  }
 }
 
 function renderImportAutoMapping() {
