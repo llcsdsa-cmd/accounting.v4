@@ -253,44 +253,7 @@ function renderDataManagement() {
     budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
   }).length;
 
-  // 1. HTML構造を生成（アイコン用の枠を確実に確保）
-  el.innerHTML = `
-    <div class="data-stat-row">
-      <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
-      <div class="data-stat"><span class="ds-num">${(dSize / 1024).toFixed(1)}KB</span><span class="ds-label">データサイズ</span></div>
-      <div class="data-stat"><span class="ds-num">${(dencho || []).length}</span><span class="ds-label">電帳法記録</span></div>
-    </div>
-    <div class="data-actions" style="display: flex; flex-direction: column; gap: 10px;">
-      <button class="export-btn" onclick="exportFullBackup()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
-        <span id="exp-icon-backup" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
-        <span>全データ書き出し（JSON）</span>
-      </button>
-      
-      <button class="export-btn" onclick="document.getElementById('restore-file').click()" style="display: flex; align-items: center; justify-content: center; min-height: 44px;">
-        <span id="exp-icon-restore" style="width:24px; height:24px; margin-right:8px; display: flex; align-items: center; justify-content: center;"></span>
-        <span>バックアップから復元</span>
-      </button>
-      
-      <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreFromFile(event)">
-      
-      <button class="export-btn danger-btn" onclick="confirmClearData()" style="min-height: 44px;">
-        データを全削除
-      </button>
-    </div>`;
-
-
-function renderDataManagement() {
-  const el = document.getElementById('data-management-body');
-  if (!el) return;
-
-  const total = (entries || []).length;
-  const dSize = JSON.stringify({ 
-    entries, 
-    taxSettings, 
-    dencho, 
-    budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
-  }).length;
-
+  // HTML構造の生成
   el.innerHTML = `
     <div class="data-stat-row">
       <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
@@ -312,24 +275,25 @@ function renderDataManagement() {
       </button>
     </div>`;
 
-  // 2. 星が出るかどうかのテスト
+  // 0.5秒待ってから赤い星を注入するテスト
   setTimeout(() => {
     const bIcon = document.getElementById('exp-icon-backup');
     const rIcon = document.getElementById('exp-icon-restore');
     
     if (bIcon) {
       bIcon.innerHTML = '<b style="color:red; font-size:20px; display:inline-block;">★</b>';
-      console.log('Test: Red Star injected into Backup');
     }
-
     if (rIcon) {
       rIcon.innerHTML = '<b style="color:red; font-size:20px; display:inline-block;">★</b>';
-      console.log('Test: Red Star injected into Restore');
     }
-    
-    console.log('Icon function check:', typeof icon);
+    console.log('Unique function test: Star injected');
   }, 500);
 }
+
+
+
+
+
 function renderImportAutoMapping() {
   const el = document.getElementById('import-mapping-body');
   if (!el) return;
