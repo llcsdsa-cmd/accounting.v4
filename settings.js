@@ -242,7 +242,7 @@ function renderBackupSettings() {
 }
 
 // ========================================================
-// 関数：データ管理画面（設定）の描画
+// 関数：データ管理画面（設定）の描画 - 永遠の監視テスト
 // ========================================================
 function renderDataManagement() {
   const el = document.getElementById('data-management-body');
@@ -281,32 +281,30 @@ function renderDataManagement() {
       </button>
     </div>`;
 
-  // --- 監視モード開始：他の処理に消されても「星」を再注入し続ける ---
-  let attempts = 0;
+  // --- 永遠の監視テスト（犯人が諦めるまで入れ続ける） ---
   const starMonitor = setInterval(() => {
     const bIcon = document.getElementById('exp-icon-backup');
-    const rIcon = document.getElementById('exp-icon-restore');
     
-    // バックアップアイコン枠のチェック
-    if (bIcon && bIcon.innerHTML === "") { 
-      bIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
-      console.log('Star re-injected (Backup)');
+    // もしボタン自体がDOMから消えていたら、ページが切り替わったと判断して終了
+    if (!bIcon) {
+        console.log('Button element gone. Stopping monitor.');
+        clearInterval(starMonitor);
+        return;
     }
     
-    // 復元アイコン枠のチェック
+    // バックアップアイコン枠が空なら再注入
+    if (bIcon.innerHTML === "") { 
+      bIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
+      console.log('Star re-injected (Endless Mode)');
+    }
+    
+    // 復元アイコン枠もチェック
+    const rIcon = document.getElementById('exp-icon-restore');
     if (rIcon && rIcon.innerHTML === "") {
       rIcon.innerHTML = '<b style="color:red; font-size:20px;">★</b>';
-      console.log('Star re-injected (Restore)');
     }
-
-    attempts++;
-    // 30回（約3秒間）チェックしたら監視を終了する
-    if (attempts > 30) {
-      clearInterval(starMonitor);
-      console.log('Monitor ended.');
-    }
-  }, 100); // 0.1秒ごとにチェック
-  // --- 監視モード終了 ---
+  }, 100); 
+  // --- 監視終了 ---
 
 } // end function renderDataManagement
 // ========================================================
