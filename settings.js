@@ -278,23 +278,27 @@ function renderDataManagement() {
       </button>
     </div>`;
 
-  // 2. JSでアイコンを流し込み、スタイルを強制固定する
+
+// 2. テスト：アイコンの代わりに「赤い★」を直接入れてみる
   setTimeout(() => {
-    if (typeof icon === 'function') {
-      const bIcon = el.querySelector('#exp-icon-backup');
-      const rIcon = el.querySelector('#exp-icon-restore');
-      
-      if (bIcon) {
-        bIcon.innerHTML = icon('export', 'exp-svg');
-        const svg = bIcon.querySelector('svg');
-        if (svg) {
-          svg.style.width = '24px';
-          svg.style.height = '24px';
-          svg.style.display = 'block';
-          svg.style.visibility = 'visible';
-          svg.style.opacity = '1';
-        }
-      }
+    // 確実に最新の要素を捕まえるために document.getElementById を使用
+    const bIcon = document.getElementById('exp-icon-backup');
+    const rIcon = document.getElementById('exp-icon-restore');
+    
+    if (bIcon) {
+      // アイコン関数の代わりに、目立つ文字を注入
+      bIcon.innerHTML = '<b style="color:red; font-size:20px; display:inline-block;">★</b>';
+      console.log('Test: Red Star injected into Backup');
+    }
+
+    if (rIcon) {
+      rIcon.innerHTML = '<b style="color:red; font-size:20px; display:inline-block;">★</b>';
+      console.log('Test: Red Star injected into Restore');
+    }
+    
+    // icons.js の状態もついでにチェック
+    console.log('Icon function check:', typeof icon);
+  }, 500); // 念のため少し長めの0.5秒待ち
 
       if (rIcon) {
         rIcon.innerHTML = icon('import', 'exp-svg');
