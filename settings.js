@@ -273,19 +273,41 @@ function renderDataManagement() {
       </button>
     </div>`;
 
-  // 2. ブラウザがHTMLを描画し終えるのを「0.1秒」だけ待ってからアイコンを注入する
+ // 2. ブラウザがHTMLを描画し終えるのを「0.1秒」待ってから、JSで直接スタイルを叩き込む
   setTimeout(() => {
     if (typeof icon === 'function') {
-      // 念のため、再度 el (data-management-body) の中から探し出す
       const bIcon = el.querySelector('#exp-icon-backup');
       const rIcon = el.querySelector('#exp-icon-restore');
       
-      if (bIcon) bIcon.innerHTML = icon('export', 'exp-svg');
-      if (rIcon) rIcon.innerHTML = icon('import', 'exp-svg');
+      if (bIcon) {
+        bIcon.innerHTML = icon('export', 'exp-svg');
+        // --- 強制スタイル適用：CSSが効かなくてもこれで見えるはず ---
+        const svg = bIcon.querySelector('svg');
+        if (svg) {
+          svg.style.width = '24px';
+          svg.style.height = '24px';
+          svg.style.display = 'inline-block';
+          svg.style.visibility = 'visible';
+          svg.style.opacity = '1';
+        }
+      }
+
+      if (rIcon) {
+        rIcon.innerHTML = icon('import', 'exp-svg');
+        // --- 強制スタイル適用 ---
+        const svg = rIcon.querySelector('svg');
+        if (svg) {
+          svg.style.width = '24px';
+          svg.style.height = '24px';
+          svg.style.display = 'inline-block';
+          svg.style.visibility = 'visible';
+          svg.style.opacity = '1';
+        }
+      }
       
-      console.log('Icons injected with delay'); // デバッグ用：コンソールにこれが出れば成功
+      console.log('Icons forced by JS'); // これがコンソールに出れば注入成功です
     }
-  }, 100); 
+  }, 100);
 }
 
 function renderImportAutoMapping() {
