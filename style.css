@@ -1437,29 +1437,30 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
   margin-bottom: 4px;
   letter-spacing: 0.03em;
 }
-/* --- アイコン表示の強制修正 --- */
-.export-btn-icon svg, 
-.nav-icon svg, 
-.icon, 
-.exp-svg {
+/* アイコンを強制的に可視化する */
+#exp-icon-backup svg, 
+#exp-icon-restore svg,
+.exp-svg,
+.icon {
     width: 24px !important;
     height: 24px !important;
-    display: inline-block !important;
-    vertical-align: middle;
+    display: block !important; /* inline-blockから変更 */
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
-/* ボタンの中のアイコン用スペースを確保 */
+/* 注入先のコンテナを広げる */
 .export-btn-icon {
-    display: inline-flex;
-    width: 24px;
-    height: 24px;
-    margin-right: 8px;
+    display: inline-flex !important;
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 12px !important;
+    background: transparent !important; /* 背景に埋もれないように */
+}
+
+/* ボタン内のテキストとアイコンを中央に揃える */
+.export-btn {
+    display: flex;
     align-items: center;
     justify-content: center;
-}
-
-/* ダッシュボードなどのカード内アイコン用 */
-.card-icon svg {
-    width: 32px !important;
-    height: 32px !important;
 }
