@@ -1437,30 +1437,35 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
   margin-bottom: 4px;
   letter-spacing: 0.03em;
 }
-/* アイコンを強制的に可視化する */
-#exp-icon-backup svg, 
-#exp-icon-restore svg,
-.exp-svg,
-.icon {
-    width: 24px !important;
-    height: 24px !important;
-    display: block !important; /* inline-blockから変更 */
+/* --- 究極のアイコン可視化大作戦 --- */
+
+/* 1. 全てのSVGを強制的に「黒色」で「巨大」にしてみる（テスト用） */
+svg {
+    width: 32px !important;
+    height: 32px !important;
+    display: inline-block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    overflow: visible !important;
 }
 
-/* 注入先のコンテナを広げる */
-.export-btn-icon {
-    display: inline-flex !important;
-    width: 24px !important;
-    height: 24px !important;
-    margin-right: 12px !important;
-    background: transparent !important; /* 背景に埋もれないように */
+/* 2. もし中のパスが透明なら、強制的に色をつける */
+svg path, 
+svg rect, 
+svg circle {
+    stroke-opacity: 1 !important;
+    fill-opacity: 1 !important;
+    /* fill: #000 !important;  ←もしこれを入れたら全部黒になります。まずは入れずに試しましょう */
 }
 
-/* ボタン内のテキストとアイコンを中央に揃える */
-.export-btn {
-    display: flex;
+/* 3. アイコンが入る器（spanなど）を赤枠で囲って場所を特定する */
+.nav-icon, 
+.export-btn-icon, 
+.card-icon {
+    border: 1px solid red !important; /* 場所確認用：後で消します */
+    min-width: 32px !important;
+    min-height: 32px !important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
 }
