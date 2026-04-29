@@ -50,19 +50,19 @@ function navigate(page) {
   const mainContent = document.getElementById('main-content');
   if (mainContent) mainContent.scrollTop = 0;
 
+// ==========================================
+// app.js の navigate 関数内：修正版
+// ==========================================
   if (page === 'settings') {
-    if (typeof renderSettingsPage === 'function') renderSettingsPage();
-    const settingsSecMap = {
-      'sec-icon-cloud': 'cloud',
-      'sec-icon-backup-set': 'backupIcon',
-      'sec-icon-import-map': 'import',
-      'sec-icon-datamanage': 'dangerIcon',
-    };
-    Object.entries(settingsSecMap).forEach(([id, name]) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = icon(name, 'sec-svg');
-    });
+    // 設定画面の描画関数を呼ぶだけにする
+    if (typeof renderSettingsPage === 'function') {
+      renderSettingsPage();
+    }
+    
+    // ↓ ここにあった settingsSecMap のループ処理（innerHTMLを書き換えていた部分）は、
+    // ↓ settings.js 側の描画と競合してバグの原因になるため、完全に削除しました。
   }
+// ==========================================
 }
 
 // ===== ダッシュボード =====
