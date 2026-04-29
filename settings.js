@@ -253,7 +253,7 @@ function renderDataManagement() {
     budget: JSON.parse(localStorage.getItem('kaikei_budget') || '{}') 
   }).length;
 
-  // 1. まずHTML構造を流し込む
+  // 1. まずHTML構造を生成（この瞬間、古い要素は消えて新しい要素が作られます）
   el.innerHTML = `
     <div class="data-stat-row">
       <div class="data-stat"><span class="ds-num">${total}</span><span class="ds-label">仕訳件数</span></div>
@@ -273,17 +273,19 @@ function renderDataManagement() {
       </button>
     </div>`;
 
-  // 2. HTMLを流し込んだ「直後」に、elの中から要素を探してアイコンを注入する
-  // 念のため、icon関数がグローバルに存在するかチェックを挟んでいます
-  if (typeof icon === 'function') {
-    const bIcon = el.querySelector('#exp-icon-backup');
-    if (bIcon) bIcon.innerHTML = icon('export', 'exp-svg');
-
-    const rIcon = el.querySelector('#exp-icon-restore');
-    if (rIcon) rIcon.innerHTML = icon('import', 'exp-svg');
-  } else {
-    console.warn('icon関数が見つかりません。icons.jsが正しく読み込まれているか確認してください。');
-  }
+  // 2. ブラウザがHTMLを描画し終えるのを「0.1秒」だけ待ってからアイコンを注入する
+  setTimeout(() => {
+    if (typeof icon === 'function') {
+      // 念のため、再度 el (data-management-body) の中から探し出す
+      const bIcon = el.querySelector('#exp-icon-backup');
+      const rIcon = el.querySelector('#exp-icon-restore');
+      
+      if (bIcon) bIcon.innerHTML = icon('export', 'exp-svg');
+      if (rIcon) rIcon.innerHTML = icon('import', 'exp-svg');
+      
+      console.log('Icons injected with delay'); // デバッグ用：コンソールにこれが出れば成功
+    }
+  }, 100); 
 }
 
 function renderImportAutoMapping() {
